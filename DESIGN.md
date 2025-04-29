@@ -33,7 +33,7 @@
 ## Flow Diagram
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
     B --> C[Clone repo locally to target directory]
     C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
