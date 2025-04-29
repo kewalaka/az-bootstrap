@@ -33,12 +33,12 @@
 ## Flow Diagram
 
 ```mermaid
-flowchart TD
-    A[User runs New-AzBootstrap] --> B[Clone template repo to target directory]
-    B --> C[Create Azure Resource Group]
-    C --> D[Create Managed Identity]
-    D --> E[Set up GitHub Environments, Secrets, Branch Protections in target repo]
-    E --> F[Ready for IaC development]
+flowchart LR
+    A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
+    B --> C[Clone repo locally to target directory]
+    C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
+    D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
+    E --> F[Ready for IaC development!]
 ```
 
 ## Extensibility
