@@ -20,18 +20,12 @@ A PowerShell module to bootstrap Azure infrastructure and GitHub repository envi
 ### Workflow Diagram
 
 ```mermaid
-flowchart LR
-    subgraph FirstLine
-        A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
-        B --> C[Clone repo locally to target directory]
-    end
-    subgraph SecondLine
-        D[Create Azure Resource Group, Managed Identity, set RBAC]
-        E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
-        F[Ready for IaC development!]
-        D --> E --> F
-    end
-    C --> D
+flowchart TD
+    A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
+    B --> C[Clone repo locally to target directory]
+    C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
+    D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
+    E --> F[Ready for IaC development!]
 ```
 
 ## Prerequisites
