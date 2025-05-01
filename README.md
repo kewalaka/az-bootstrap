@@ -2,9 +2,9 @@
 
 A PowerShell module to bootstrap Azure infrastructure and GitHub repository environments for Infrastructure-as-Code (IaC) projects.
 
-## What does it do?
+It is designed as a lightweight alternative to subscription vending, suitable for smaller projects and settings up demos.
 
-This PS Module helps boostrap your Azure and GitHub environment:
+## What does it do?
 
 ```mermaid
 flowchart TD
@@ -35,13 +35,21 @@ $params = {
   ApplyEnvName        = "apply"
   ResourceGroupName   = "rg-my-new-iac-project"
   ManagedIdentityName = "mi-my-new-iac-project" 
-  Location            = "newzealandnorth" 
+  Location            = "newzealandnorth"
+  # optionally omit these and specify using $env:ARM_TENANT_ID and $env:ARM_SUBSCRIPTION_ID
+  ArmTenantID         = "2c7d1c9d-1ee9-4be3-924a-d4c3466fa22a"
+  ArmSubscriptionID   = "faf579e7-385d-47cd-8990-a6789973ce5f"
 }
 New-AzBootstrap @params
 ```
 
-- The command above will clone the template repo, create the Azure infra, and configure the new solution repo for secure OIDC-based deployments.
-- You need to provide Azure Tenant and Subscription IDs either via parameters (`-ArmTenantId`, `-ArmSubscriptionId`) or environment variables (`$env:ARM_TENANT_ID`, `$env:ARM_SUBSCRIPTION_ID`). The Managed Identity Client ID (`ARM_CLIENT_ID`) is automatically determined and configured.
+The above will:
+
+- Clones a starter template repository from GitHub (the "source" template repo) into a "target" repository.
+- Creates an Azure resource group and managed identity
+- Grants Contributor and User Access Administrator (RBAC) roles to the managed identity at the resource group level
+- Sets up federated credentials for GitHub environments
+- Configures GitHub environments, secrets, and branch protection in the new ("target") repository.
 
 ## Next Steps
 
