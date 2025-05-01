@@ -8,10 +8,10 @@ This PS Module helps boostrap your Azure and GitHub environment:
 
 ```mermaid
 flowchart TD
-    A[Creates a new repo <br/> from a GitHub template] --> B[Clones repo locally <br/>to target directory]
-    B --> C[Create Resource Group, <br/> Managed Identity & RBAC]
-    C --> D[Set GitHub Environments<br/>, Secrets, Branch Protections<br/> in solution repo]
-    D --> E[Ready for IaC development!]
+    A[Creates a new repository<br/> from a GitHub template] --> B[Clones the repository locally]
+    B --> C[Create resource group, <br/> managed identity & RBAC]
+    C --> D[Configures GitHub Environments<br/>, secrets, and branch protections<br/> in the solution repo]
+    D --> E[Now you're ready for IaC development!]
 ```
 
 ## Get started
