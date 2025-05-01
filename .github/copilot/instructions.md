@@ -96,6 +96,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 - **If changing RBAC or security logic, review for least-privilege and idempotency.**
 - **If updating CLI dependencies (az, gh), ensure compatibility and update Ensure-GhCli if needed.**
 - **If adding interactive features, consider keeping them in a wrapper script, not the core module.**
+- **Use PowerShell approved verbs for cmdlet names** <https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands?view=powershell-7.5>
 
 ---
 

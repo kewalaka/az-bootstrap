@@ -42,22 +42,16 @@ flowchart TD
 Import-Module ./az-bootstrap.psd1 -Force
 
 # Example assuming you want the new repo 'my-new-iac-project' created under your user account
-New-AzBootstrap `
-  -TemplateRepoUrl "https://github.com/kewalaka/terraform-azure-starter-template" `
-  -TargetRepoName "my-new-iac-project" ` # Added missing mandatory parameter
-  -TargetDirectory "./my-new-iac-project-local" `
-  -PlanEnvName "plan" `
-  -ApplyEnvName "apply" `
-  -ResourceGroupName "rg-my-new-iac-project" `
-  -Location "australiaeast" `
-  -ManagedIdentityName "mi-my-new-iac-project" `
-  -ArmTenantId "YOUR_AZURE_TENANT_ID" ` # Required if not set as env var $env:ARM_TENANT_ID
-  -ArmSubscriptionId "YOUR_AZURE_SUBSCRIPTION_ID" # Required if not set as env var $env:ARM_SUBSCRIPTION_ID
-  # -Owner "YourGitHubOrg" # Optional: Specify if creating under an organization
-  # -ApplyEnvironmentReviewers @("githubuser1", "team-alias") # Optional: Defaults to no reviewers
-  # -ProtectedBranchName "develop" # Optional: Defaults to "main"
-  # -RequirePR $false # Optional: Defaults to $true
-  # -RequiredReviewers 0 # Optional: Defaults to 1
+$params = {
+  TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
+  TargetRepoName      = "my-new-iac-project"
+  PlanEnvName         = "plan"
+  ApplyEnvName        = "apply"
+  ResourceGroupName   = "rg-my-new-iac-project"
+  ManagedIdentityName = "mi-my-new-iac-project" 
+  Location            = "newzealandnorth" 
+}
+New-AzBootstrap @params
 ```
 
 - The command above will clone the template repo, create the Azure infra, and configure the new solution repo for secure OIDC-based deployments.
