@@ -4,42 +4,28 @@ A PowerShell module to bootstrap Azure infrastructure and GitHub repository envi
 
 ## What does it do?
 
-- Clones a starter template repository from GitHub (the "source" template repo)
-- Creates an Azure resource group and managed identity
-- Sets up federated credentials for GitHub environments
-- Configures GitHub environments, secrets, and branch protection in the new solution repository (the "target" repo)
-- Grants Contributor and User Access Administrator (RBAC) roles to the managed identity at the resource group level
-
-## How it Works
-
-1. You use this module on your local machine (after installing and authenticating with Azure CLI and GitHub CLI).
-2. The module clones a GitHub template repository (e.g., [terraform-azure-starter-template](https://github.com/kewalaka/terraform-azure-starter-template)) into a new directory for your solution repository.
-3. It provisions the required Azure infrastructure (resource group, managed identity).
-4. It configures the new solution repository with GitHub environments, secrets, and branch protections for secure OIDC-based deployments.
-
-### Workflow Diagram
+This PS Module helps boostrap your Azure and GitHub environment:
 
 ```mermaid
 flowchart TD
-    A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
-    B --> C[Clone repo locally to target directory]
-    C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
-    D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
-    E --> F[Ready for IaC development!]
+    A[Creates a new repo <br/> from a GitHub template] --> B[Clones repo locally <br/>to target directory]
+    B --> C[Create Resource Group, <br/> Managed Identity & RBAC]
+    C --> D[Set GitHub Environments<br/>, Secrets, Branch Protections<br/> in solution repo]
+    D --> E[Ready for IaC development!]
 ```
 
-## Prerequisites
+## Get started
 
-- PowerShell 7+
-- Azure CLI (`az`)
-- GitHub CLI (`gh`)
-- You must be logged in to both Azure and GitHub CLIs before running the module (non-interactive usage)
-- Permissions to create Azure resources and GitHub repositories
+To get you started you need:
+
+1. PowerShell 7, Az CLI, and the GitHub CLI installed
+1. You must be logged in to both Azure and GitHub CLIs before running the module.
+1. Azure permissions (Contributor, RBAC Admin), and permission to create GitHub repositories
 
 ## Usage Example
 
 ```powershell
-Import-Module ./az-bootstrap.psd1 -Force
+Install-Module Az-Bootstrap -Scope CurrentUser
 
 # Example assuming you want the new repo 'my-new-iac-project' created under your user account
 $params = {
@@ -60,4 +46,3 @@ New-AzBootstrap @params
 ## Next Steps
 
 - See [DESIGN.md](./DESIGN.md) for more details on architecture and extensibility.
-- See the `tests/` folder for usage examples and Pester tests.
