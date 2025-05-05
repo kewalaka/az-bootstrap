@@ -1,4 +1,4 @@
-function New-AzGitHubEnvironment {
+function New-GitHubEnvironment {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Owner,
@@ -6,6 +6,6 @@ function New-AzGitHubEnvironment {
         [Parameter(Mandatory)][string]$EnvironmentName
     )
     $cmd = @("gh", "api", "-X", "PUT", "/repos/$Owner/$Repo/environments/$EnvironmentName")
-    Invoke-AzGhCommand -Command $cmd | Out-Null
+    Invoke-GitHubCliCommand -Command $cmd | Out-Null
     Write-Host "✔ Environment '$EnvironmentName' created/updated in $Owner/$Repo."
 }

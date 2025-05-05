@@ -8,9 +8,6 @@ function New-AzBootstrap {
         [string]$TargetRepoName,
 
         [Parameter(Mandatory)]
-        [string]$TargetDirectory,
-
-        [Parameter(Mandatory)]
         [string]$PlanEnvName,
 
         [Parameter(Mandatory)]
@@ -31,6 +28,9 @@ function New-AzBootstrap {
         
         # optional
         [string]$Owner, # Optional, defaults to current user/org
+
+        [ValidateSet("public", "private", "internal")]
+        [string]$Visibility = "public",
 
         [string]$TargetDirectory, # defaults to ".\$targetreponame"
 
@@ -54,36 +54,39 @@ function New-AzBootstrap {
     #endregion
 
     #region: check CLI tools
-    if (-not (Install-GitHubCLI)) {
-        throw "'gh' CLI is not available and could not be installed. Please install GitHub CLI: https://cli.github.com/"
-    }
     Write-Host "[az-bootstrap] Checking GitHub CLI authentication status..."
-    gh auth status --hostname github.com | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "GitHub CLI is not authenticated. Please run 'gh auth login' and authenticate before running this command."
+    if (-not (Test-GitHubCLI)) {
+        throw "GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
     }
 
-    if (-not (Ensure-GhCli)) {
-        throw "'gh' CLI is not available and could not be installed. Please install GitHub CLI: https://cli.github.com/"
-    }
-    Write-Host "[az-bootstrap] Checking GitHub CLI authentication status..."
-    gh auth status --hostname github.com | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "GitHub CLI is not authenticated. Please run 'gh auth login' and authenticate before running this command."
+    Write-Host "[az-bootstrap] Checking Az CLI authentication status..."
+    if (-not (Test-AzCli -TenantId $ArmTenantId -SubscriptionId $ArmSubscriptionId)) {
+        throw "Az CLI is not authenticated. Please run 'az login' to authenticate."
     }
     #endregion
 
     # GitHub repo
     $ownerArg = if ($Owner) { "--owner $Owner" } else { "" }
+    $visibilityArg = switch ($Visibility) {
+        "private" { "--private" }
+        "internal" { "--internal" }
+        Default { "--public" }
+    }
     Write-Host "[az-bootstrap] Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
-    $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl --public $ownerArg --confirm"
+    $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
     Invoke-Expression $cmd
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create new GitHub repository from template."
     }
 
-    Write-Host "[az-bootstrap] Cloning new repo to $TargetDirectory"
-    $repoUrl = if ($Owner) { "https://github.com/$Owner/$TargetRepoName.git" } else { "https://github.com/$TargetRepoName.git" }
+    $actualOwner = if ($Owner) { $Owner } else {
+        # Try to get the current user/org from gh CLI
+        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
+        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
+    }
+
+    $repoUrl = "https://github.com/$actualOwner/$TargetRepoName.git"
+    Write-Host "[az-bootstrap] Cloning new repo '$actualOwner/$TargetRepoName' to $TargetDirectory"
     git clone $repoUrl $TargetDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to clone new repository from $repoUrl."
@@ -91,30 +94,30 @@ function New-AzBootstrap {
 
     Push-Location $TargetDirectory
     try {
-        $repoInfo = Get-AzGitRepositoryInfo -OverrideOwner $Owner
+        $repoInfo = Get-AzGitRepositoryInfo
         if (-not $repoInfo) {
             throw "Could not determine repository information from git remote or overrides."
         }
-        $actualOwner = $repoInfo.Owner
-        $actualRepo = $repoInfo.Repo
 
-        $mi = Set-AzBootstrapAzureInfra -ResourceGroupName $ResourceGroupName -Location $Location -ManagedIdentityName $ManagedIdentityName -PlanEnvName $PlanEnvName -ApplyEnvName $ApplyEnvName -Owner $actualOwner -Repo $actualRepo
-        if (-not $mi -or -not $mi.clientId) {
-            throw "Failed to create managed identity or retrieve its client ID."
-        }
-
+        Set-GitHubBranchProtection -Owner $repoInfo.Owner `
+            -Repo $repoInfo.Repo `
+            -Branch $ProtectedBranchName `
+            -RequirePR $RequirePR `
+            -RequiredReviewers $RequiredReviewers
+   
         # GitHub environment setup - pass necessary info
-        Set-AzBootstrapGitHubEnvironments -PlanEnvName $PlanEnvName `
-                                          -ApplyEnvName $ApplyEnvName `
-                                          -ArmTenantId $ArmTenantId `
-                                          -ArmSubscriptionId $ArmSubscriptionId `
-                                          -ArmClientId $mi.clientId `
-                                          -Owner $actualOwner `
-                                          -Repo $actualRepo `
-                                          -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers `
-                                          -ProtectedBranchName $ProtectedBranchName `
-                                          -RequirePR $RequirePR `
-                                          -RequiredReviewers $RequiredReviewers
+        $devEnv = Add-Environment `
+            -EnvironmentName "dev" `
+            -ResourceGroupName $ResourceGroupName `
+            -Location $Location `
+            -ManagedIdentityName $ManagedIdentityName `
+            -ArmTenantId $ArmTenantId `
+            -ArmSubscriptionId $ArmSubscriptionId `
+            -Owner $repoInfo.Owner `
+            -Repo $repoInfo.Repo `
+            -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers
+        
+        Write-Host "[az-bootstrap] Dev environment created with Plan/Apply environments."
     }
     finally {
         Pop-Location

@@ -19,18 +19,27 @@
 - **Azure Infra:** Creates a resource group and managed identity, and configures federated credentials for OIDC-based GitHub Actions workflows.
 - **GitHub Environments:** Creates GitHub environments (PLAN, APPLY, etc.), sets secrets, and applies branch protection and deployment policies.
 - **Extensible:** Designed to support both GitHub and Azure DevOps in the future.
-- **RBAC Assignment:** Grants Contributor and User Access Administrator roles to the managed identity at the resource group level for full deployment and access control capabilities.
+- **RBAC Assignment:** Grants Contributor and RBAC Administrator roles to the managed identity at the resource group level for full deployment and access control capabilities.
+
+## Updated Features
+
+- **Environment Management:**
+  - Added support for creating and managing multiple environments (e.g., dev, test, prod).
+  - Each environment has its own Azure resources and GitHub configurations.
+  - Environments follow the naming pattern `{environment}-plan` and `{environment}-apply`.
 
 ## Architecture
 
 - **Public Interface:**
   - `New-AzBootstrap`: Orchestrates the full bootstrap process.
+  - `Add-Environment`: Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
+  - `Remove-Environment`: Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
 - **Private Functions:**
-  - `Get-AzGitRepositoryInfo`, `Invoke-AzGhCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-AzGitHubEnvironment`, `Set-AzGitHubEnvironmentSecrets`, `Set-AzGitHubEnvironmentPolicy`, `New-AzGitHubBranchRuleset`, etc.
+  - `Get-AzGitRepositoryInfo`, `Invoke-GitHubCliCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-GitHubEnvironment`, `Set-GitHubEnvironmentSecrets`, `Set-GitHubEnvironmentPolicy`, `New-GitHubBranchRuleset`, etc.
 - **Separation of Concerns:**
   - Each function is responsible for a single task, making the module easy to maintain and extend.
 
-## Flow Diagram
+## Updated Flow Diagram
 
 ```mermaid
 flowchart TD
@@ -38,7 +47,8 @@ flowchart TD
     B --> C[Clone repo locally to target directory]
     C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
     D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
-    E --> F[Ready for IaC development!]
+    E --> F[Add or manage additional environments as needed]
+    F --> G[Ready for IaC development!]
 ```
 
 ## Extensibility
@@ -75,6 +85,18 @@ Invoke-Pester -Path ./tests/ -ExcludePath "*NewAzBootstrap*"
 ```
 
 This command will discover and execute all test files (`*.Tests.ps1`) within the `tests` directory.
+
+## Updated Testing Instructions
+
+To test the new environment management features:
+
+```powershell
+# Test adding a new environment
+Invoke-Pester -Path ./tests/Test-AddEnvironment.Tests.ps1
+
+# Test removing an environment
+Invoke-Pester -Path ./tests/Test-RemoveEnvironment.Tests.ps1
+```
 
 ---
 

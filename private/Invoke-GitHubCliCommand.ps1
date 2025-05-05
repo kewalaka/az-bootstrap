@@ -1,4 +1,4 @@
-function Invoke-AzGhCommand {
+function Invoke-GitHubCliCommand {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]

@@ -1,4 +1,4 @@
-function Set-AzGitHubEnvironmentPolicy {
+function Set-GitHubEnvironmentPolicy {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Owner,
@@ -9,12 +9,12 @@ function Set-AzGitHubEnvironmentPolicy {
     )
     $payload = @{
         protected_branches = $ProtectedBranches
-        reviewers = $Reviewers
+        reviewers          = $Reviewers
     } | ConvertTo-Json
     $cmd = @(
         "gh", "api", "-X", "PUT", "/repos/$Owner/$Repo/environments/$EnvironmentName/deployment-branch-policy",
         "-f", "payload=$payload"
     )
-    Invoke-AzGhCommand -Command $cmd | Out-Null
+    Invoke-GitHubCliCommand -Command $cmd | Out-Null
     Write-Host "✔ Deployment branch policy set for '$EnvironmentName'."
 }

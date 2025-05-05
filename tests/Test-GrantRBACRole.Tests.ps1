@@ -1,4 +1,4 @@
-Describe "Grant-RBACRole" {
+Describe "Grant-AzRBACRole" {
     BeforeAll { 
         Import-Module "$PSScriptRoot/../az-bootstrap.psd1" -Force
     }
@@ -25,7 +25,7 @@ Describe "Grant-RBACRole" {
             $global:LASTEXITCODE = 0
             
             # Execute the function
-            { Grant-RBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Not -Throw
+            { Grant-AzRBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Not -Throw
             
             # Check that az was called with the right parameters
             Assert-MockCalled az -Times 1 -Exactly -Scope It -ParameterFilter { $args -contains 'group' -and $args -contains 'show' }
@@ -48,7 +48,7 @@ Describe "Grant-RBACRole" {
             $global:LASTEXITCODE = 0
             
             # Execute the function
-            { Grant-RBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Not -Throw
+            { Grant-AzRBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Not -Throw
             
             # Verify role assignment create was NOT called
             Assert-MockCalled az -Times 1 -Exactly -Scope It -ParameterFilter { $args -contains 'group' -and $args -contains 'show' }
@@ -66,7 +66,7 @@ Describe "Grant-RBACRole" {
             }
             
             # Execute and expect exception
-            { Grant-RBACRole -ResourceGroupName "fail-rg" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Throw
+            { Grant-AzRBACRole -ResourceGroupName "fail-rg" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Throw
         }
 
         It "Throws if az role assignment create fails" {
@@ -87,7 +87,7 @@ Describe "Grant-RBACRole" {
             }
             
             # Execute and expect exception
-            { Grant-RBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Throw
+            { Grant-AzRBACRole -ResourceGroupName "rg-test" -PrincipalId "principal-id" -RoleDefinitionId "role-id" } | Should -Throw
         }
         
         AfterEach {

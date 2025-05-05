@@ -10,20 +10,22 @@ This file provides detailed guidance for AI assistants (and human contributors) 
 
 - **az-bootstrap** automates the setup of Azure infrastructure and GitHub repository environments for Infrastructure-as-Code (IaC) projects.
 - It is inspired by `azd up` but is focused on bootstrapping foundational cloud and repository configuration for secure, automated deployments using OIDC and GitHub Actions.
+- It provides functionality to create and manage multiple environments (dev, test, prod, etc.) within a project, each with appropriate Azure resources and GitHub environment configurations.
 
-Essentially, it bootstraps both the Azure and GitHub sides needed for a secure, OIDC-based deployment pipeline for a new IaC project, starting from a predefined template.
+Essentially, it bootstraps both the Azure and GitHub sides needed for a secure, OIDC-based deployment pipeline for a new IaC project, starting from a predefined template, and enables ongoing environment management.
 
 ---
 
 ## What is the module
 
-The az-bootstrap repository contains a PowerShell module designed to automate the initial setup for Infrastructure-as-Code (IaC) projects that use Azure and GitHub. It performs the following main tasks:
+The az-bootstrap repository contains a PowerShell module designed to automate the initial setup and ongoing environment management for Infrastructure-as-Code (IaC) projects that use Azure and GitHub. It performs the following main tasks:
 
 - Clones a Template: It takes a GitHub template repository URL (e.g., a starter template for Terraform or Bicep) and creates a new repository from it for your specific project (the "target" repository).
 - Provisions Azure Core Infrastructure: It creates an Azure Resource Group and a Managed Identity within your Azure subscription.
-- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'plan', 'apply'), configures Federated Credentials on the Azure Managed Identity to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client ID) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
+- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'dev-plan', 'dev-apply', 'prod-plan', 'prod-apply'), configures Federated Credentials on the Azure Managed Identity to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client ID) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
 - Sets up Branch Protection: It configures branch protection rules on the target repository to enforce policies, likely related to the configured environments.
-- Assigns RBAC Roles: It grants the created Managed Identity the 'Contributor' and 'User Access Administrator' roles on the Resource Group, enabling it to deploy and manage resources and permissions within that scope.
+- Assigns RBAC Roles: It grants the created Managed Identity the 'Contributor' and 'RBAC Administrator' roles on the Resource Group, enabling it to deploy and manage resources and permissions within that scope.
+- Manages Multiple Environments: It supports adding, configuring, and removing additional environments (dev, test, prod, etc.) after initial setup, with each environment having its own Azure resources and GitHub environments.
 
 ---
 
@@ -32,9 +34,11 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 - Creates a new GitHub repository from a template using `gh repo create --template` (not just cloning).
 - Clones the new repository locally for further setup.
 - Creates an Azure resource group and managed identity.
-- Assigns Contributor and User Access Administrator (RBAC) roles to the managed identity at the resource group level.
-- Sets up federated credentials for GitHub environments (PLAN, APPLY, etc.).
+- Assigns Contributor and RBAC Administrator roles to the managed identity at the resource group level.
+- Sets up federated credentials for GitHub environments (plan, apply, etc.).
 - Configures GitHub environments, secrets, and branch protection in the new solution repository.
+- Supports ongoing environment management (adding/removing environments).
+- Separates branch protection from environment-specific configurations.
 - Designed for extensibility (future support for Azure DevOps, more policies, etc.).
 
 ---
@@ -64,8 +68,8 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Folder Structure
 
-- `public/` — Exported functions (main entry points, e.g., `New-AzBootstrap`).
-- `private/` — Internal helpers (not exported, e.g., `New-AzResourceGroup`, `Grant-RBACRole`).
+- `public/` — Exported functions (main entry points, e.g., `New-AzBootstrap`, `Add-Environment`).
+- `private/` — Internal helpers (not exported, e.g., `New-AzResourceGroup`, `Grant-AzRBACRole`).
 - `classes/` — (Optional) PowerShell classes.
 - `tests/` — Pester tests for all public and private functions.
 - `README.md` — High-level usage and getting started.
@@ -75,15 +79,19 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Key Functions & Responsibilities
 
-- **New-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, then sets up Azure and GitHub configuration.
+- **New-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, sets up branch protection, then creates the initial "dev" environment with Azure and GitHub configurations.
+- **Add-Environment** (public): Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
+- **Remove-Environment** (public): Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
+- **Install-GitHubCLI** (public): Installs GitHub CLI if not available (downloads if needed).
 - **Set-AzBootstrapAzureInfra** (private): Creates RG, managed identity, assigns RBAC, sets up federated creds.
-- **Set-AzBootstrapGitHubEnvironments** (private): Creates environments, sets secrets, policies, branch protection. Accepts explicit Owner/Repo parameters.
-- **Grant-RBACRole** (private): Assigns a role to a principal at the RG scope.
-- **Ensure-GhCli** (private): Ensures GitHub CLI is available (downloads if needed).
+- **Set-GitHubEnvironmentConfig** (private): Creates environments, sets secrets, policies. Accepts explicit Owner/Repo parameters.
+- **Set-GitHubBranchProtection** (private): Sets branch protection rules. Separate from environment configuration.
+- **Grant-AzRBACRole** (private): Assigns a role to a principal at the RG scope.
 - **Get-AzGitRepositoryInfo** (private): Gets repo info from explicit parameters, git, or Codespaces env.
-- **Invoke-AzGhCommand** (private): Runs a GitHub CLI command.
+- **Invoke-GitHubCliCommand** (private): Runs a GitHub CLI command.
+- **New-AzEnvironmentInfrastructure** (private): Creates the Azure infrastructure for a specific environment.
 - **New-AzResourceGroup**, **New-AzManagedIdentity**, **New-AzFederatedCredential**: Atomic Azure resource operations.
-- **New-AzGitHubEnvironment**, **Set-AzGitHubEnvironmentSecrets**, **Set-AzGitHubEnvironmentPolicy**, **New-AzGitHubBranchRuleset**: Atomic GitHub repo operations.
+- **New-GitHubEnvironment**, **Set-GitHubEnvironmentSecrets**, **Set-GitHubEnvironmentPolicy**, **New-GitHubBranchRuleset**: Atomic GitHub repo operations.
 
 ---
 
@@ -102,14 +110,17 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Useful Context for LLMs
 
-- The workflow is: create new repo from template → clone new repo → bootstrap infra and GitHub settings.
-- All private GitHub functions should accept explicit Owner/Repo parameters for testability and correctness.
+- The initial workflow is: create new repo from template → clone new repo → set branch protection → create dev environment
+- The ongoing workflow is: add/remove environments as needed, each with their own Azure resources and GitHub environment configurations
+- Environment types follow the pattern: "{environment}-plan" and "{environment}-apply" (e.g., "dev-plan", "dev-apply", "prod-plan", "prod-apply")
+- Branch protection is set once during initial setup and is separate from environment-specific configurations
+- All private GitHub functions should accept explicit Owner/Repo parameters for testability and correctness
 - Tests should mock `gh repo create` as well as `gh secret`, `gh api`, etc.
-- This module should remain cross-platform where possible.
-- The main use case is IaC project bootstrap for Azure + GitHub, but extensibility is a goal.
-- All external calls to Azure or GitHub should be mockable for tests.
-- The module is intended for both human and automated (CI/CD) use.
-- If in doubt, prefer explicit, parameterized, and testable code.
+- This module should remain cross-platform where possible
+- The main use case is IaC project bootstrap for Azure + GitHub, but extensibility is a goal
+- All external calls to Azure or GitHub should be mockable for tests
+- The module is intended for both human and automated (CI/CD) use
+- If in doubt, prefer explicit, parameterized, and testable code
 
 ---
 

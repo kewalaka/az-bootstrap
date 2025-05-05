@@ -1,4 +1,4 @@
-Describe "Invoke-AzGhCommand" {
+Describe "Invoke-GitHubCliCommand" {
     BeforeAll { 
         Import-Module "$PSScriptRoot/../az-bootstrap.psd1" -Force
     }
@@ -10,7 +10,7 @@ Describe "Invoke-AzGhCommand" {
             # Mock $LASTEXITCODE to simulate success
             $global:LASTEXITCODE = 0
             
-            $output = Invoke-AzGhCommand -Command @("gh", "api", "--method", "GET", "/user")
+            $output = Invoke-GitHubCliCommand -Command @("gh", "api", "--method", "GET", "/user")
             $output | Should -Be "Command output"
         }
         
@@ -21,7 +21,7 @@ Describe "Invoke-AzGhCommand" {
                 return "Error: API call failed" 
             }
             
-            { Invoke-AzGhCommand -Command @("gh", "api", "--method", "GET", "/user") } | Should -Throw
+            { Invoke-GitHubCliCommand -Command @("gh", "api", "--method", "GET", "/user") } | Should -Throw
         }
         
         AfterEach {

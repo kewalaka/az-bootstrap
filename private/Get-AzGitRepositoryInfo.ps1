@@ -7,10 +7,9 @@ function Get-AzGitRepositoryInfo {
     if ($OverrideOwner -and $OverrideRepo) {
         return [PSCustomObject]@{
             RemoteUrl = "https://github.com/$OverrideOwner/$OverrideRepo"
-            Owner = $OverrideOwner
-            Repo = $OverrideRepo
-            RemoteOriginLine = "origin https://github.com/$OverrideOwner/$OverrideRepo.git (fetch)"
-            Source = "Override"
+            Owner     = $OverrideOwner
+            Repo      = $OverrideRepo
+            Source    = "Override"
         }
     }
     # Try git remote -v first
@@ -26,13 +25,13 @@ function Get-AzGitRepositoryInfo {
                 $repo = ($segments[1] -replace '\.git$', '')
                 return [PSCustomObject]@{
                     RemoteUrl = $remoteUrl
-                    Owner = $owner
-                    Repo = $repo
-                    RemoteOriginLine = $remoteOutput
-                    Source = "GitRemote"
+                    Owner     = $owner
+                    Repo      = $repo
+                    Source    = "GitRemote"
                 }
             }
-        } catch {}
+        }
+        catch {}
     }
     # Fallback: Codespaces env vars
     if ($env:GITHUB_SERVER_URL -eq "https://github.com" -and $env:GITHUB_REPOSITORY) {
@@ -42,13 +41,11 @@ function Get-AzGitRepositoryInfo {
             $owner = $segments[0]
             $repo = $segments[1]
             $remoteUrl = "https://github.com/$owner/$repo"
-            $syntheticRemoteOriginLine = "origin $remoteUrl (fetch)"
             return [PSCustomObject]@{
                 RemoteUrl = $remoteUrl
-                Owner = $owner
-                Repo = $repo
-                RemoteOriginLine = $syntheticRemoteOriginLine
-                Source = "Codespaces"
+                Owner     = $owner
+                Repo      = $repo
+                Source    = "Codespaces"
             }
         }
     }

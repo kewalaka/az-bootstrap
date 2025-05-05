@@ -1,4 +1,4 @@
-function Set-AzGitHubEnvironmentSecrets {
+function Set-GitHubEnvironmentSecrets {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Owner,
@@ -8,7 +8,7 @@ function Set-AzGitHubEnvironmentSecrets {
     )
     foreach ($key in $Secrets.Keys) {
         $cmd = @("gh", "secret", "set", $key, "--env", $EnvironmentName, "-b", $Secrets[$key])
-        Invoke-AzGhCommand -Command $cmd | Out-Null
+        Invoke-GitHubCliCommand -Command $cmd | Out-Null
         Write-Host "✔ Secret '$key' set for environment '$EnvironmentName'."
     }
 }

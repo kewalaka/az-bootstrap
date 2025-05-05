@@ -47,9 +47,39 @@ The above will:
 
 - Clones a starter template repository from GitHub (the "source" template repo) into a "target" repository.
 - Creates an Azure resource group and managed identity
-- Grants Contributor and User Access Administrator (RBAC) roles to the managed identity at the resource group level
+- Grants Contributor and RBAC Administrator (RBAC) roles to the managed identity at the resource group level
 - Sets up federated credentials for GitHub environments
 - Configures GitHub environments, secrets, and branch protection in the new ("target") repository.
+
+## Updated Usage Example
+
+```powershell
+# Example for creating a new project with multiple environments
+$params = {
+  TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
+  TargetRepoName      = "my-new-iac-project"
+  PlanEnvName         = "plan"
+  ApplyEnvName        = "apply"
+  ResourceGroupName   = "rg-my-new-iac-project"
+  ManagedIdentityName = "mi-my-new-iac-project"
+  Location            = "newzealandnorth"
+}
+
+# Initial bootstrap
+New-AzBootstrap @params
+
+# Add a new environment (e.g., 'test')
+Add-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-iac-project-test" -Location "australiaeast"
+
+# Remove an environment (e.g., 'test')
+Remove-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-iac-project-test"
+```
+
+The above demonstrates how to:
+
+- Bootstrap a new project with initial environments.
+- Add additional environments as needed.
+- Remove environments when they are no longer required.
 
 ## Next Steps
 

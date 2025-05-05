@@ -1,4 +1,4 @@
-Describe "Set-AzGitHubEnvironmentSecrets" {
+Describe "Set-GitHubEnvironmentSecrets" {
     BeforeAll {
         Import-Module "$PSScriptRoot/../az-bootstrap.psd1" -Force
     }
@@ -12,9 +12,9 @@ Describe "Set-AzGitHubEnvironmentSecrets" {
         }
 
         It "Calls gh secret set for each secret" {
-            Mock Invoke-AzGhCommand { $null }
-            { Set-AzGitHubEnvironmentSecrets -Owner "org" -Repo "repo" -EnvironmentName "PLAN" -Secrets $secrets } | Should -Not -Throw
-            Assert-MockCalled Invoke-AzGhCommand -Exactly 2 -Scope It # Once for each secret
+            Mock Invoke-GitHubCliCommand { $null }
+            { Set-GitHubEnvironmentSecrets -Owner "org" -Repo "repo" -EnvironmentName "PLAN" -Secrets $secrets } | Should -Not -Throw
+            Assert-MockCalled Invoke-GitHubCliCommand -Exactly 2 -Scope It # Once for each secret
         }
     }
 }

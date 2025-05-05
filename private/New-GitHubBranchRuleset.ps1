@@ -1,4 +1,4 @@
-function New-AzGitHubBranchRuleset {
+function New-GitHubBranchRuleset {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Owner,
@@ -19,6 +19,6 @@ function New-AzGitHubBranchRuleset {
         "gh", "api", "-X", "PUT", "/repos/$Owner/$Repo/branches/$Branch/protection",
         "-f", "payload=$payload"
     )
-    Invoke-AzGhCommand -Command $cmd | Out-Null
+    Invoke-GitHubCliCommand -Command $cmd | Out-Null
     Write-Host "✔ Branch protection set for '$Branch'."
 }
