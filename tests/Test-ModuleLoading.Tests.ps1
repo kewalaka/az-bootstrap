@@ -56,10 +56,10 @@ Describe "Module Loading Diagnostics" {
             }
             
             # Check a private function
-            if (Get-Command -Name "Get-AzGitRepositoryInfo" -ErrorAction SilentlyContinue) {
-                Write-Host "✓ Get-AzGitRepositoryInfo function is available"
+            if (Get-Command -Name "Get-GitHubRepositoryInfo" -ErrorAction SilentlyContinue) {
+                Write-Host "✓ Get-GitHubRepositoryInfo function is available"
             } else {
-                Write-Host "✕ Get-AzGitRepositoryInfo function is NOT available!"
+                Write-Host "✕ Get-GitHubRepositoryInfo function is NOT available!"
             }
         }
         catch {
