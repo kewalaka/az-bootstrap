@@ -95,6 +95,16 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ---
 
+## GitHub Environment and Policy Management
+
+- **New-GitHubEnvironment**: Accepts optional ARM parameters (TenantId, SubscriptionId, ClientId). If all are provided, secrets are set automatically for the environment.
+- **Set-GitHubEnvironmentSecrets**: Sets ARM secrets for a GitHub environment. Skips secret configuration if any required value is missing.
+- **Set-GitHubEnvironmentPolicy**: Accepts both user and team reviewers. Reviewer IDs are resolved automatically. If reviewer arrays are empty, reviewer configuration is skipped. Protected branches default to `main` but can be customized.
+- All reviewer/team/secret parameters are optional and skipped if not provided or empty.
+- All new/updated functions follow the explicit parameter and no-magic-globals rule.
+
+---
+
 ## Update Considerations
 
 - **Always update or add Pester tests for new/changed logic.**

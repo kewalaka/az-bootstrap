@@ -5,8 +5,8 @@ function Invoke-GitHubCliCommand {
         [string[]]$Command
     )
     $joined = $Command -join ' '
-    Write-Host "[az-bootstrap] Running: $joined"
-    $result = & $Command[0] $Command[1..($Command.Count-1)]
+    Write-Verbose "[az-bootstrap] Running: $joined"
+    $result = & $Command[0] $Command[1..($Command.Count - 1)]
     if ($LASTEXITCODE -ne 0) {
         throw "GitHub CLI command failed: $joined"
     }

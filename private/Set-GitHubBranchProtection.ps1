@@ -14,5 +14,8 @@ function Set-GitHubBranchProtection {
   )
   
   Write-Host "[az-bootstrap] Setting branch protection for '$Branch'"
-  New-GitHubBranchRuleset -Owner $Owner -Repo $Repo -Branch $Branch -RequirePR $RequirePR -RequiredReviewers $RequiredReviewers
+  New-GitHubBranchRuleset -Owner $Owner -Repo $Repo `
+    -Branch $Branch `
+    -RequirePR $RequirePR `
+    -RequiredReviewers $RequiredReviewers
 }

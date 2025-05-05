@@ -51,6 +51,19 @@ flowchart TD
     F --> G[Ready for IaC development!]
 ```
 
+## GitHub Environment and Policy Management
+
+- **New-GitHubEnvironment**: Now supports optional ARM parameters (TenantId, SubscriptionId, ClientId). If all are provided, it will automatically set these as secrets in the created environment using `Set-GitHubEnvironmentSecrets`.
+- **Set-GitHubEnvironmentSecrets**: Robustly sets ARM secrets for a given environment, skipping secret configuration if any required value is missing.
+- **Set-GitHubEnvironmentPolicy**: Supports both user and team reviewers. Reviewer IDs are resolved automatically. If no reviewers are provided, reviewer configuration is skipped. Protected branches default to `main` but can be customized.
+- All reviewer/team/secret parameters are optional and, if not provided or empty, the related configuration is skipped.
+
+## Parameter Handling Improvements
+
+- All public and private functions now use sensible defaults for optional parameters.
+- Reviewer and team arrays, as well as ARM secret parameters, are optional and skipped if empty.
+- No use of magic globals; all state is passed explicitly or via standard environment variables.
+
 ## Extensibility
 
 - The module is structured to allow easy addition of new cloud providers, repo hosts, or environment policies.
