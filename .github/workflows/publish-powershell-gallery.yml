@@ -1,0 +1,32 @@
+name: Publish PowerShell Module
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  test-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v2
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -Force -Scope CurrentUser
+
+      - name: Run Pester Tests
+        shell: pwsh
+        run: Invoke-Pester -Path ./tests
+
+      - name: Publish to PowerShell Gallery
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          Publish-Module -Path . -NuGetApiKey $env:NUGET_API_KEY -Verbose
