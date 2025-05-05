@@ -13,7 +13,7 @@ function Remove-Environment {
 
   # Get repo info if not provided
   if (-not $SkipRepoConfiguration -and (-not $Owner -or -not $Repo)) {
-    $repoInfo = Get-AzGitRepositoryInfo -OverrideOwner $Owner -OverrideRepo $Repo
+    $repoInfo = Get-GitHubRepositoryInfo -OverrideOwner $Owner -OverrideRepo $Repo
     $Owner = $repoInfo.Owner
     $Repo = $repoInfo.Repo
   }

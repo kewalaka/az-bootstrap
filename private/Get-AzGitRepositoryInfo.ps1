@@ -1,4 +1,4 @@
-function Get-AzGitRepositoryInfo {
+function Get-GitHubRepositoryInfo {
     [CmdletBinding()]
     param(
         [string]$OverrideOwner,

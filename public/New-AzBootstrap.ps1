@@ -106,7 +106,7 @@ function New-AzBootstrap {
 
     Push-Location $TargetDirectory
     try {
-        $repoInfo = Get-AzGitRepositoryInfo
+        $repoInfo = Get-GitHubRepositoryInfo
         if (-not $repoInfo) {
             throw "Could not determine repository information from git remote or overrides."
         }
@@ -124,7 +124,7 @@ function New-AzBootstrap {
             -EnableCopilotReview $BranchEnableCopilotReview
    
         # GitHub environment setup - pass necessary info
-        $devEnv = Add-Environment `
+        $DeploymentEnv = Add-Environment `
             -EnvironmentName "dev" `
             -ResourceGroupName $ResourceGroupName `
             -Location $Location `
@@ -135,7 +135,7 @@ function New-AzBootstrap {
             -Repo $repoInfo.Repo `
             -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers
         
-        Write-Host "[az-bootstrap] Dev environment created with Plan/Apply environments."
+        Write-Host "[az-bootstrap] $($DeploymentEnv.EnvironmentName) environment created."
     }
     finally {
         Pop-Location

@@ -4,7 +4,7 @@ function Set-GitHubEnvironmentSecrets {
         [Parameter(Mandatory)][string]$Owner,
         [Parameter(Mandatory)][string]$Repo,
         [Parameter(Mandatory)][string]$EnvironmentName,
-        [Parameter(Mandatory)][string]$Secrets
+        [Parameter(Mandatory)][object]$Secrets
     )
     foreach ($key in $secrets.Keys) {
         $cmd = @("gh", "secret", "set", $key, "--env", $EnvironmentName, "-b", $secrets[$key])

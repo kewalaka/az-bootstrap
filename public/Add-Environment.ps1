@@ -21,7 +21,7 @@ function Add-Environment {
 
     # Get repo info if not provided
     if (-not $Owner -or -not $Repo) {
-        $repoInfo = Get-AzGitRepositoryInfo -OverrideOwner $Owner -OverrideRepo $Repo
+        $repoInfo = Get-GitHubRepositoryInfo -OverrideOwner $Owner -OverrideRepo $Repo
         $Owner = $repoInfo.Owner
         $Repo = $repoInfo.Repo
     }
@@ -41,7 +41,7 @@ function Add-Environment {
     $secrets = @{
         "ARM_TENANT_ID"       = $ArmTenantId
         "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId
-        "ARM_CLIENT_ID"       = $ArmClientId
+        "ARM_CLIENT_ID"       = $mi.clientId
     }
         
     if (-not $SkipRepoConfiguration) {

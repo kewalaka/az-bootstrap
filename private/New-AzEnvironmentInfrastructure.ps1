@@ -28,10 +28,8 @@ function New-AzEnvironmentInfrastructure {
   Write-Host "✔ Managed identity '$ManagedIdentityName' created."
   
   # Assign RBAC roles
-  $contributorRole = "b24988ac-6180-42a0-ab88-20f7382dd24c"
-  $rbacAdminRole = "f58310d9-a9f6-439a-9e8d-f62e7b41a168"
-  Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -RoleDefinitionId $contributorRole
-  Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -RoleDefinitionId $rbacAdminRole
+  Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -PrincipalName $ManagedIdentityName -RoleDefinition "Contributor"
+  Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -PrincipalName $ManagedIdentityName -RoleDefinition "Role Based Access Control Administrator"
 
   # Set up federated credentials for both environments
   $params = @{

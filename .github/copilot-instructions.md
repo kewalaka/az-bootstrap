@@ -87,7 +87,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 - **Set-GitHubEnvironmentConfig** (private): Creates environments, sets secrets, policies. Accepts explicit Owner/Repo parameters.
 - **Set-GitHubBranchProtection** (private): Sets branch protection rules. Separate from environment configuration.
 - **Grant-AzRBACRole** (private): Assigns a role to a principal at the RG scope.
-- **Get-AzGitRepositoryInfo** (private): Gets repo info from explicit parameters, git, or Codespaces env.
+- **Get-GitHubRepositoryInfo** (private): Gets repo info from explicit parameters, git, or Codespaces env.
 - **Invoke-GitHubCliCommand** (private): Runs a GitHub CLI command.
 - **New-AzEnvironmentInfrastructure** (private): Creates the Azure infrastructure for a specific environment.
 - **New-AzResourceGroup**, **New-AzManagedIdentity**, **New-AzFederatedCredential**: Atomic Azure resource operations.

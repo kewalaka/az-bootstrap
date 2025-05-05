@@ -6,10 +6,12 @@ function Grant-AzRBACRole {
         [Parameter(Mandatory)]
         [string]$PrincipalId,
         [Parameter(Mandatory)]
-        [string]$RoleDefinitionId # Can be role name or ID
+        [string]$PrincipalName,
+        [Parameter(Mandatory)]
+        [string]$RoleDefinition
     )
 
-    Write-Host "[az-bootstrap] Assigning role '$RoleDefinitionId' to principal '$PrincipalId' over resource group '$ResourceGroupName'..."
+    Write-Host "[az-bootstrap] Assigning role '$RoleDefinition' to principal '$PrincipalName' over resource group '$ResourceGroupName'..."
 
     # Get the scope of the resource group using Az CLI only
     Write-Verbose "[az-bootstrap] Getting resource group scope for '$ResourceGroupName'..."
@@ -20,7 +22,7 @@ function Grant-AzRBACRole {
     Write-Verbose "✔ Resource group scope found: $scope"
 
     # Check if assignment already exists
-    $assignment = az role assignment list --assignee $PrincipalId --role $RoleDefinitionId --scope $scope --query "[0]" | ConvertFrom-Json -ErrorAction SilentlyContinue
+    $assignment = az role assignment list --assignee $PrincipalId --role $RoleDefinition --scope $scope --query "[0]" | ConvertFrom-Json -ErrorAction SilentlyContinue
     if ($assignment) {
         Write-Host "✔ Role assignment already exists."
         return
@@ -31,15 +33,15 @@ function Grant-AzRBACRole {
         "az", "role", "assignment", "create",
         "--assignee-object-id", $PrincipalId,
         "--assignee-principal-type", "ServicePrincipal", # Assuming Managed Identity
-        "--role", $RoleDefinitionId,
+        "--role", $RoleDefinition,
         "--scope", $scope
     )
     $joined = $cmd -join ' '
     Write-Verbose "[az-bootstrap] Running: $joined"
-    $result = & az role assignment create --assignee-object-id $PrincipalId --assignee-principal-type ServicePrincipal --role $RoleDefinitionId --scope $scope --output none
+    & az role assignment create --assignee-object-id $PrincipalId --assignee-principal-type ServicePrincipal --role $RoleDefinition --scope $scope --output none
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to assign role '$RoleDefinitionId' to principal '$PrincipalId' on scope '$scope'."
+        throw "Failed to assign role '$RoleDefinition' to principal '$PrincipalName ($PrincipalId)' on scope '$scope'."
     }
 
-    Write-Host "✔ Role '$RoleDefinitionId' assigned successfully."
+    Write-Host "✔ Role '$RoleDefinition' assigned successfully."
 }

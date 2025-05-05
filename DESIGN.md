@@ -35,7 +35,7 @@
   - `Add-Environment`: Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
   - `Remove-Environment`: Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
 - **Private Functions:**
-  - `Get-AzGitRepositoryInfo`, `Invoke-GitHubCliCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-GitHubEnvironment`, `Set-GitHubEnvironmentSecrets`, `Set-GitHubEnvironmentPolicy`, `New-GitHubBranchRuleset`, etc.
+  - `Get-GitHubRepositoryInfo`, `Invoke-GitHubCliCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-GitHubEnvironment`, `Set-GitHubEnvironmentSecrets`, `Set-GitHubEnvironmentPolicy`, `New-GitHubBranchRuleset`, etc.
 - **Separation of Concerns:**
   - Each function is responsible for a single task, making the module easy to maintain and extend.
 
