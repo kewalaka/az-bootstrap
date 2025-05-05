@@ -36,22 +36,27 @@ function Add-Environment {
         -ApplyEnvName $applyEnvName `
         -Owner $Owner `
         -Repo $Repo        
-      
+        
     # 2. Configure GitHub environments (plan/apply) for this environment if requested
+    $secrets = @{
+        "ARM_TENANT_ID"       = $ArmTenantId
+        "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId
+        "ARM_CLIENT_ID"       = $ArmClientId
+    }
+        
     if (-not $SkipRepoConfiguration) {
         $planEnvName = "${EnvironmentName}-plan"
         $applyEnvName = "${EnvironmentName}-apply"
       
-        Set-GitHubEnvironmentConfig `
-            -EnvironmentName $EnvironmentName `
-            -PlanEnvName $planEnvName `
-            -ApplyEnvName $applyEnvName `
-            -ArmTenantId $ArmTenantId `
-            -ArmSubscriptionId $ArmSubscriptionId `
-            -ArmClientId $mi.clientId `
-            -Owner $Owner `
-            -Repo $Repo `
-            -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers
+        foreach ($envName in @($planEnvName, $applyEnvName | Select-Object -Unique)) {
+            New-GitHubEnvironment -Owner $Owner -Repo $Repo -EnvironmentName $envName
+            Set-GitHubEnvironmentSecrets -Owner $Owner -Repo $Repo -EnvironmentName $envName -Secrets $secrets
+        }
+        
+        if ($applyEnvName -ne $planEnvName -and $ApplyEnvironmentReviewers.Count -gt 0) {
+            Set-GitHubEnvironmentPolicy -Owner $Owner -Repo $Repo -EnvironmentName $applyEnvName `
+                -ProtectedBranches @("main") -Reviewers $ApplyEnvironmentReviewers
+        }
     }
 
     return [PSCustomObject]@{

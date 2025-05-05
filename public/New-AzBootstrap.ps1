@@ -40,7 +40,19 @@ function New-AzBootstrap {
         
         [bool]$RequirePR = $true, # Default: Require PR for protected branch
         
-        [int]$RequiredReviewers = 1 # Default: Required reviewers for protected branch
+        [int]$RequiredReviewers = 1, # Default: Required reviewers for protected branch
+
+        # add the branch ruleset defaults
+        [string]$BranchRulesetName = "main", # Default branch ruleset name
+        [string]$BranchTargetPattern = "main", # Default branch target pattern
+        [int]$BranchRequiredApprovals = 1, # Default required approvals for branch ruleset
+        [bool]$BranchDismissStaleReviews = $true, # Default: Dismiss stale reviews on push
+        [bool]$BranchRequireCodeOwnerReview = $false, # Default: Require code owner review
+        [bool]$BranchRequireLastPushApproval = $true, # Default: Require last push approval
+        [bool]$BranchRequireThreadResolution = $false, # Default: Require thread resolution
+        [string[]]$BranchAllowedMergeMethods = @("squash"), # Default allowed merge methods
+        [bool]$BranchEnableCopilotReview = $true # Default: Enable Copilot review
+
     )
 
     #region: check target directory
@@ -99,11 +111,17 @@ function New-AzBootstrap {
             throw "Could not determine repository information from git remote or overrides."
         }
 
-        Set-GitHubBranchProtection -Owner $repoInfo.Owner `
+        New-GitHubBranchRuleset -Owner $repoInfo.Owner `
             -Repo $repoInfo.Repo `
-            -Branch $ProtectedBranchName `
-            -RequirePR $RequirePR `
-            -RequiredReviewers $RequiredReviewers
+            -RulesetName "main" `
+            -TargetPattern $ProtectedBranchName `
+            -RequiredApprovals $RequiredReviewers `
+            -DismissStaleReviews $BranchDismissStaleReviews `
+            -RequireCodeOwnerReview $BranchRequireCodeOwnerReview `
+            -RequireLastPushApproval $BranchRequireLastPushApproval `
+            -RequireThreadResolution $BranchRequireThreadResolution `
+            -AllowedMergeMethods $BranchAllowedMergeMethods `
+            -EnableCopilotReview $BranchEnableCopilotReview
    
         # GitHub environment setup - pass necessary info
         $devEnv = Add-Environment `
