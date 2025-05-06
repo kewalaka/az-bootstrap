@@ -26,6 +26,11 @@ function New-AzEnvironmentInfrastructure {
     throw "Failed to create or locate existing managed identity: $ManagedIdentityName"
   }
 
+  if ($mi.WasCreated) {
+    Write-Host "[az-bootstrap] Waiting 20 seconds for managed identity propagation..."
+    Start-Sleep -Seconds 20
+  }
+
   Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -PrincipalName $ManagedIdentityName -RoleDefinition "Contributor"
   Grant-AzRBACRole -ResourceGroupName $ResourceGroupName -PrincipalId $mi.principalId -PrincipalName $ManagedIdentityName -RoleDefinition "Role Based Access Control Administrator"
 

@@ -32,12 +32,13 @@ Install-Module Az-Bootstrap -Scope CurrentUser
 $env:ArmTenantID = "2c7d1c9d-1ee9-4be3-924a-d4c3466fa22a"
 $env:ArmSubscriptionID = "faf579e7-385d-47cd-8990-a6789973ce5f"
 
-# Example assuming you want the new repo 'my-new-iac-project' created under your user account
+# Example assuming you want the new repo 'my-new-demo' created under your user account
+$name = "my-new-demo"
 $params = {
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
-  TargetRepoName      = "my-new-iac-project"
-  ResourceGroupName   = "rg-my-new-iac-project"
-  ManagedIdentityName = "mi-my-new-iac-project" 
+  TargetRepoName      = "$name"
+  ResourceGroupName   = "rg-$name-dev-nzn"
+  ManagedIdentityName = "mi-$name-dev-nzn" 
   Location            = "newzealandnorth"
 }
 New-AzBootstrap @params
@@ -59,10 +60,10 @@ You can add or remove environments using:
 
 ```pwsh
 # Add a new environment (e.g., 'test')
-Add-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-iac-project-test" -Location "newzealandnorth"
+Add-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
 
 # Remove an environment (e.g., 'test')
-Remove-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-iac-project-test"
+Remove-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn"
 ```
 
 Adding an environment will:
@@ -77,30 +78,69 @@ Adding an environment will:
 ### Complete Example
 
 ```powershell
-# Example for creating a new project with multiple environments
+# Example showing all the parameters
+$name = "fancy-demo-project"
+$environment = "dev"
 $params = @{
+  # required
   TemplateRepoUrl                = "https://github.com/kewalaka/terraform-azure-starter-template"
-  TargetRepoName                 = "my-new-iac-project"
-  PlanEnvName                    = "plan"                # (string, optional) Suffix for the "plan" GitHub environment (default: "plan")
-  ApplyEnvName                   = "apply"               # (string, optional) Suffix for the "apply" GitHub environment (default: "apply")
-  ResourceGroupName              = "rg-my-new-iac-project"
-  ManagedIdentityName            = "mi-my-new-iac-project"
+  TargetRepoName                 = $name
+  ResourceGroupName              = "rg-$name-$environment-nzn"
+  ManagedIdentityName            = "mi-$name-$environment-nzn"
   Location                       = "newzealandnorth"
-  TargetDirectory                = "D:\src\kewalaka\pwsh\my-new-iac-project" # (string, optional) Where to clone repo locally (default: ".\$TargetRepoName")
-  Visibility                     = "private"             # (string, optional) "private" or "public" (default: "public")
-  Owner                          = "my-org-or-user"      # (string, optional) GitHub org/user for the new repo (default: detected from gh auth)
-  ArmTenantId                    = $env:ARM_TENANT_ID    # (string, optional) Azure tenant ID (default: from environment variable)
-  ArmSubscriptionId              = $env:ARM_SUBSCRIPTION_ID # (string, optional) Azure subscription ID (default: from environment variable)
-  ProtectedBranchName            = "main"                # (string, optional) Branch to protect (default: "main")
-  RequiredReviewers              = 1                     # (int, optional) Number of required PR reviewers (default: 1)
-  BranchDismissStaleReviews      = $true                 # (bool, optional) Dismiss stale PR reviews on new commits (default: $true)
-  BranchRequireCodeOwnerReview   = $false                # (bool, optional) Require code owner review (default: $false)
-  BranchRequireLastPushApproval  = $true                 # (bool, optional) Require approval after last push (default: $true)
-  BranchRequireThreadResolution  = $false                # (bool, optional) Require all threads resolved before merging (default: $false)
-  BranchAllowedMergeMethods      = @("squash")           # (string[], optional) Allowed merge methods (default: @("squash"))
-  BranchEnableCopilotReview      = $true                 # (bool, optional) Enable Copilot code review (default: $true)
-  InitialEnvironmentName         = "dev"                 # (string, optional) Name for the initial environment (default: "dev")
-  ApplyEnvironmentReviewers      = @("reviewer1", "reviewer2") # (string[], optional) GitHub users/teams required to approve deployments to apply environment
+
+  # optional
+
+  # Suffix for the "plan" GitHub environment (default: "dev-plan")
+  PlanEnvName = "$environment-plan"
+  
+  # Suffix for the "apply" GitHub environment (default: "dev-apply")
+  ApplyEnvName = "$environment-apply"
+  
+  # Where to clone repo locally (default: ".\$TargetRepoName")
+  TargetDirectory = "D:\src\kewalaka\demos\$name" 
+  
+  # "private" or "public" (default: "public")
+  Visibility = "private"             
+  
+  # GitHub org/user for the new repo (default: detected from gh auth)
+  Owner = "my-org-or-user"      
+
+  # Azure tenant ID (default: from environment variable)
+  ArmTenantId = $env:ARM_TENANT_ID    
+
+  # Azure subscription ID (default: from environment variable)
+  ArmSubscriptionId = $env:ARM_SUBSCRIPTION_ID 
+
+  # Branch to protect (default: "main")
+  ProtectedBranchName = "main"                
+
+  # Number of required PR reviewers (default: 1)
+  RequiredReviewers = 1                     
+
+  # Dismiss stale PR reviews on new commits (default: $true)
+  BranchDismissStaleReviews = $true                 
+
+  # Require code owner review (default: $false)
+  BranchRequireCodeOwnerReview = $false                
+
+  # Require approval after last push (default: $true)
+  BranchRequireLastPushApproval = $true                 
+
+  # Require all threads resolved before merging (default: $false)
+  BranchRequireThreadResolution = $false                
+
+  # Allowed merge methods (default: @("squash"))
+  BranchAllowedMergeMethods = @("squash")           
+
+  # Enable Copilot code review (default: $true)
+  BranchEnableCopilotReview = $true                 
+
+  # Name for the initial environment (default: "dev")
+  InitialEnvironmentName = $environment          
+
+  # GitHub users/teams required to approve deployments to apply environment
+  ApplyEnvironmentReviewers = @("reviewer1", "reviewer2") 
 }
 
 # Initial bootstrap
@@ -109,19 +149,19 @@ New-AzBootstrap @params
 # Add a new environment (e.g., 'test')
 Add-Environment `
     -EnvironmentName "test" `
-    -ResourceGroupName "rg-my-new-iac-project-test" `
+    -ResourceGroupName "rg-$name-$environment-nzn" `
     -Location "australiaeast" `
-    -ManagedIdentityName "mi-my-new-iac-project-test" `
+    -ManagedIdentityName "mi-$name-$environment-nzn" `
     -Owner "my-org-or-user" `
-    -Repo "my-new-iac-project" `
-    -PlanEnvName "plan" `
-    -ApplyEnvName "apply" `
+    -Repo "$name" `
+    -PlanEnvName "$environment-plan" `
+    -ApplyEnvName "$environment-apply" `
     -ArmTenantId $env:ARM_TENANT_ID `
     -ArmSubscriptionId $env:ARM_SUBSCRIPTION_ID `
     -ApplyEnvironmentReviewers @("reviewer1", "reviewer2")
 
 # Remove an environment (e.g., 'test')
-Remove-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-iac-project-test"
+Remove-Environment -EnvironmentName "$environment" -ResourceGroupName "rg-$name-$environment-nzn"
 ```
 
 The above demonstrates how to:
