@@ -11,13 +11,15 @@ function New-AzManagedIdentity {
     Write-Host "[az-bootstrap] Creating managed identity '$ManagedIdentityName'..."
     $existing = az identity show --name $ManagedIdentityName --resource-group $ResourceGroupName 2>$null | ConvertFrom-Json
     if ($existing) {
-        Write-Host "✔ Managed identity '$ManagedIdentityName' already exists."
+        Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+        Write-Host "Managed identity '$ManagedIdentityName' already exists."
         $existing | Add-Member -MemberType NoteProperty -Name WasCreated -Value $false
         return $existing
     }
     $mi = az identity create --name $ManagedIdentityName --resource-group $ResourceGroupName --location $Location | ConvertFrom-Json
     if (-not $mi) { throw "Failed to create managed identity $ManagedIdentityName" }
-    Write-Host "✔ Managed identity '$ManagedIdentityName' created."
+    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+    Write-Host "Managed identity '$ManagedIdentityName' created."
     $mi | Add-Member -MemberType NoteProperty -Name WasCreated -Value $true
     return $mi
 }

@@ -23,8 +23,8 @@ function New-AzBootstrap {
         # optional
         [string]$Owner, # Optional, defaults to current user/org
         [string]$InitialEnvironmentName = "dev",
-        [string]$PlanEnvName = "${InitialEnvironmentName}-plan",
-        [string]$ApplyEnvName = "${InitialEnvironmentName}-apply",        
+        [string]$PlanEnvName = "${InitialEnvironmentName}-iac-plan",
+        [string]$ApplyEnvName = "${InitialEnvironmentName}-iac-apply",        
 
         [ValidateSet("public", "private", "internal")]
         [string]$Visibility = "public",
@@ -37,7 +37,7 @@ function New-AzBootstrap {
         
         [bool]$RequirePR = $true, # Default: Require PR for protected branch
         
-        [int]$RequiredReviewers = 1, # Default: Required reviewers for protected branch
+        [int]$RequiredReviewers = 0, # Default: Required reviewers for protected branch
 
         # add the branch ruleset defaults
         [string]$BranchRulesetName = "main", # Default branch ruleset name
@@ -45,11 +45,12 @@ function New-AzBootstrap {
         [int]$BranchRequiredApprovals = 1, # Default required approvals for branch ruleset
         [bool]$BranchDismissStaleReviews = $true, # Default: Dismiss stale reviews on push
         [bool]$BranchRequireCodeOwnerReview = $false, # Default: Require code owner review
-        [bool]$BranchRequireLastPushApproval = $true, # Default: Require last push approval
+        [bool]$BranchRequireLastPushApproval = $false, # Default: Require last push approval
         [bool]$BranchRequireThreadResolution = $false, # Default: Require thread resolution
         [string[]]$BranchAllowedMergeMethods = @("squash"), # Default allowed merge methods
-        [bool]$BranchEnableCopilotReview = $true # Default: Enable Copilot review
+        [bool]$BranchEnableCopilotReview = $true, # Default: Enable Copilot review
 
+        [bool]$AddOwnerAsReviewer = $true # Default: Add owner as reviewer for the Apply environment
     )
 
     #region: check target directory
@@ -120,7 +121,7 @@ function New-AzBootstrap {
             -AllowedMergeMethods $BranchAllowedMergeMethods `
             -EnableCopilotReview $BranchEnableCopilotReview
    
-        # GitHub environment setup - pass necessary info
+        # GitHub environment setup      
         $DeploymentEnv = Add-Environment `
             -EnvironmentName $InitialEnvironmentName `
             -ResourceGroupName $ResourceGroupName `
@@ -132,7 +133,9 @@ function New-AzBootstrap {
             -Repo $repoInfo.Repo `
             -PlanEnvName $PlanEnvName `
             -ApplyEnvName $ApplyEnvName `
-            -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers
+            -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers `
+            -ApplyEnvironmentTeamReviewers $ApplyEnvironmentTeamReviewers `
+            -AddOwnerAsReviewer $AddOwnerAsReviewer
         
         Write-Host "[az-bootstrap] $($DeploymentEnv.EnvironmentName) environment created."
     }
@@ -140,7 +143,7 @@ function New-AzBootstrap {
         Pop-Location
     }
 
-    Write-Host "[az-bootstrap] Bootstrap complete."
+    Write-Host "[az-bootstrap] Bootstrap complete. 🎉"
 }
 
 Export-ModuleMember -Function New-AzBootstrap

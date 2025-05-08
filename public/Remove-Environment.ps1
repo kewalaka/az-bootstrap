@@ -20,8 +20,8 @@ function Remove-Environment {
 
   # 1. Remove GitHub environments if requested
   if (-not $SkipRepoConfiguration) {
-    $planEnvName = "${EnvironmentName}-plan"
-    $applyEnvName = "${EnvironmentName}-apply"
+    $planEnvName = "${EnvironmentName}-iac-plan"
+    $applyEnvName = "${EnvironmentName}-iac-apply"
       
     if ($PSCmdlet.ShouldProcess("GitHub environment $planEnvName", "Remove")) {
       Remove-GitHubEnvironment -Owner $Owner -Repo $Repo -EnvironmentName $planEnvName

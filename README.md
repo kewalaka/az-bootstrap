@@ -1,8 +1,13 @@
 # az-bootstrap
 
-A PowerShell module to bootstrap Azure infrastructure and GitHub repository environments for Infrastructure-as-Code (IaC) projects.
+A PowerShell module to bootstrap Azure and GitHub components for Infrastructure-as-Code (IaC) projects.
 
-It is designed as a lightweight alternative to subscription vending, suitable for smaller projects and settings up demos.
+`az-boostrap` 💖 `azd`.
+
+Azure Bootstrap augments [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview?tabs=windows&WT.mc_id=MVP_388586) (azd),
+adding support for managed identities (via OIDC), and the creation of GitHub enviornments with secrets, a default branch ruleset, and reviewers.
+
+You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 
 ## What does it do?
 
@@ -71,7 +76,7 @@ Adding an environment will:
 - Create a new Azure resource group and managed identity for the environment (if they do not already exist)
 - Assign Contributor and RBAC Administrator roles to the managed identity at the resource group level
 - Set up federated credentials for GitHub OIDC trust for this environment
-- Create two GitHub environments (e.g., "test-plan" and "test-apply") in the target repository
+- Create two GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") in the target repository
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
 - Optionally configure deployment reviewers and branch protection for the environment
 
@@ -91,11 +96,11 @@ $params = @{
 
   # optional
 
-  # Suffix for the "plan" GitHub environment (default: "dev-plan")
-  PlanEnvName = "$environment-plan"
+  # Suffix for the "plan" GitHub environment (default: "dev-iac-plan")
+  PlanEnvName = "$environment-iac-plan"
   
-  # Suffix for the "apply" GitHub environment (default: "dev-apply")
-  ApplyEnvName = "$environment-apply"
+  # Suffix for the "apply" GitHub environment (default: "dev-iac-apply")
+  ApplyEnvName = "$environment-iac-apply"
   
   # Where to clone repo locally (default: ".\$TargetRepoName")
   TargetDirectory = "D:\src\kewalaka\demos\$name" 
@@ -119,19 +124,19 @@ $params = @{
   RequiredReviewers = 1                     
 
   # Dismiss stale PR reviews on new commits (default: $true)
-  BranchDismissStaleReviews = $true                 
+  BranchDismissStaleReviews = $true
 
   # Require code owner review (default: $false)
-  BranchRequireCodeOwnerReview = $false                
+  BranchRequireCodeOwnerReview = $false
 
-  # Require approval after last push (default: $true)
-  BranchRequireLastPushApproval = $true                 
+  # Require approval after last push (default: $false)
+  BranchRequireLastPushApproval = $false
 
   # Require all threads resolved before merging (default: $false)
-  BranchRequireThreadResolution = $false                
+  BranchRequireThreadResolution = $false
 
   # Allowed merge methods (default: @("squash"))
-  BranchAllowedMergeMethods = @("squash")           
+  BranchAllowedMergeMethods = @("squash", "merge", "rebase")
 
   # Enable Copilot code review (default: $true)
   BranchEnableCopilotReview = $true                 
@@ -140,7 +145,10 @@ $params = @{
   InitialEnvironmentName = $environment          
 
   # GitHub users/teams required to approve deployments to apply environment
-  ApplyEnvironmentReviewers = @("reviewer1", "reviewer2") 
+  ApplyEnvironmentReviewers = @("reviewer1", "reviewer2")
+
+  # Add the owner of the repo (as determined elsewhere) as a reviewer.
+  AddOwnerAsReviewer = $true
 }
 
 # Initial bootstrap
@@ -154,8 +162,8 @@ Add-Environment `
     -ManagedIdentityName "mi-$name-$environment-nzn" `
     -Owner "my-org-or-user" `
     -Repo "$name" `
-    -PlanEnvName "$environment-plan" `
-    -ApplyEnvName "$environment-apply" `
+    -PlanEnvName "$environment-iac-plan" `
+    -ApplyEnvName "$environment-iac-apply" `
     -ArmTenantId $env:ARM_TENANT_ID `
     -ArmSubscriptionId $env:ARM_SUBSCRIPTION_ID `
     -ApplyEnvironmentReviewers @("reviewer1", "reviewer2")
@@ -173,3 +181,13 @@ The above demonstrates how to:
 ## Next Steps
 
 - See [DESIGN.md](./DESIGN.md) for more details on architecture and extensibility.
+
+## Roadmap
+
+In no particular order, and without any commitments:
+
+- Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach.
+- Examples targeting Bicep (the general approach, as is, will work good with Bicep too!)
+- Support for Azure DevOps
+- Explore using the official Bicep vending as a mechanism to create the resources, to give more flexibility.
+- Use a ~/.az-bootstrap ini file to track preferences like a default template repo. (maybe even some 'repo aliases')

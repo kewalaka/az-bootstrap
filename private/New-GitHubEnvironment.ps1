@@ -7,5 +7,6 @@ function New-GitHubEnvironment {
     )
     $cmd = @("gh", "api", "-X", "PUT", "/repos/$Owner/$Repo/environments/$EnvironmentName")
     Invoke-GitHubCliCommand -Command $cmd | Out-Null
-    Write-Host "✔ Environment '$EnvironmentName' created/updated in $Owner/$Repo."
+    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+    Write-Host "Environment '$EnvironmentName' created/updated in $Owner/$Repo."
 }
