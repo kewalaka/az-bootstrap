@@ -15,9 +15,11 @@ function Add-Environment {
         [string]$ArmSubscriptionId,
         [string]$Owner,
         [string]$Repo,
-        [string]$PlanEnvName = "${EnvironmentName}-plan",
-        [string]$ApplyEnvName = "${EnvironmentName}-apply",
+        [string]$PlanEnvName = "${EnvironmentName}-iac-plan",
+        [string]$ApplyEnvName = "${EnvironmentName}-iac-apply",
         [string[]]$ApplyEnvironmentReviewers = @(),
+        [string[]]$ApplyEnvironmentTeamReviewers = @(),
+        [bool]$AddOwnerAsReviewer = $true,
         [switch]$SkipRepoConfiguration
     )
 
@@ -52,9 +54,11 @@ function Add-Environment {
             Set-GitHubEnvironmentSecrets -Owner $Owner -Repo $Repo -EnvironmentName $envName -Secrets $secrets
         }
         
-        if ($applyEnvName -ne $planEnvName -and $ApplyEnvironmentReviewers.Count -gt 0) {
+        if ($applyEnvName -ne $planEnvName -and ($ApplyEnvironmentReviewers.Count -gt 0 -or $ApplyEnvironmentTeamReviewers.Count -gt 0 -or $AddOwnerAsReviewer)) {
             Set-GitHubEnvironmentPolicy -Owner $Owner -Repo $Repo -EnvironmentName $applyEnvName `
-                -ProtectedBranches @("main") -Reviewers $ApplyEnvironmentReviewers
+                -UserReviewers $ApplyEnvironmentReviewers `
+                -TeamReviewers $ApplyEnvironmentTeamReviewers `
+                -AddOwnerAsReviewer $AddOwnerAsReviewer
         }
     }
 

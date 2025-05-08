@@ -22,7 +22,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 - Clones a Template: It takes a GitHub template repository URL (e.g., a starter template for Terraform or Bicep) and creates a new repository from it for your specific project (the "target" repository).
 - Provisions Azure Core Infrastructure: It creates an Azure Resource Group and a Managed Identity within your Azure subscription.
-- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'dev-plan', 'dev-apply', 'prod-plan', 'prod-apply'), configures Federated Credentials on the Azure Managed Identity to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client ID) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
+- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'dev-iac-plan', 'dev-iac-apply', 'prod-iac-plan', 'prod-iac-apply'), configures Federated Credentials on the Azure Managed Identity to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client ID) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
 - Sets up Branch Protection: It configures branch protection rules on the target repository to enforce policies, likely related to the configured environments.
 - Assigns RBAC Roles: It grants the created Managed Identity the 'Contributor' and 'RBAC Administrator' roles on the Resource Group, enabling it to deploy and manage resources and permissions within that scope.
 - Manages Multiple Environments: It supports adding, configuring, and removing additional environments (dev, test, prod, etc.) after initial setup, with each environment having its own Azure resources and GitHub environments.
@@ -122,7 +122,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 - The initial workflow is: create new repo from template → clone new repo → set branch protection → create dev environment
 - The ongoing workflow is: add/remove environments as needed, each with their own Azure resources and GitHub environment configurations
-- Environment types follow the pattern: "{environment}-plan" and "{environment}-apply" (e.g., "dev-plan", "dev-apply", "prod-plan", "prod-apply")
+- Environment types follow the pattern: "{environment}-iac-plan" and "{environment}-iac-apply" (e.g., "dev-iac-plan", "dev-iac-apply", "prod-iac-plan", "prod-iac-apply")
 - Branch protection is set once during initial setup and is separate from environment-specific configurations
 - All private GitHub functions should accept explicit Owner/Repo parameters for testability and correctness
 - Tests should mock `gh repo create` as well as `gh secret`, `gh api`, etc.
@@ -149,6 +149,14 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 - If you are an LLM, always check for the latest context in this file and the module docs.
 - If you are a human, please review open issues and PRs before making major changes.
+
+---
+
+## Code style
+
+- Avoid comments that simply describe the next line of code
+- Comment sparingly, when code is not already intuitive or to explain some non-obvious constraint
+- When writing PowerShell, be sure to use approved verbs for function names.
 
 ---
 

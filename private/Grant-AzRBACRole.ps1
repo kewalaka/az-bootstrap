@@ -24,7 +24,8 @@ function Grant-AzRBACRole {
     # Check if assignment already exists
     $assignment = az role assignment list --assignee $PrincipalId --role $RoleDefinition --scope $scope --query "[0]" | ConvertFrom-Json -ErrorAction SilentlyContinue
     if ($assignment) {
-        Write-Host "✔ Role assignment already exists."
+        Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+        Write-Host "Role assignment already exists."
         return
     }
 
@@ -43,5 +44,6 @@ function Grant-AzRBACRole {
         throw "Failed to assign role '$RoleDefinition' to principal '$PrincipalName ($PrincipalId)' on scope '$scope'."
     }
 
-    Write-Host "✔ Role '$RoleDefinition' assigned successfully."
+    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+    Write-Host "Role '$RoleDefinition' assigned successfully."
 }

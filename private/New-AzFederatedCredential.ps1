@@ -8,21 +8,20 @@ function New-AzFederatedCredential {
         [Parameter(Mandatory)]
         [string]$GitHubEnvironmentName,
         [Parameter(Mandatory)]
-        [string]$Owner, # Added parameter
+        [string]$Owner,
         [Parameter(Mandatory)]
-        [string]$Repo # Added parameter
+        [string]$Repo
     )
-    # Removed call to Get-GitHubRepositoryInfo
 
-    # Construct subject using passed-in owner/repo
-    $subject = "repo:$Owner/$Repo:environment:$GitHubEnvironmentName"
+    # use a format string because otherwise $Repo:environment would be interpreted as a variable
+    $subject = ('repo:{0}/{1}:environment:{2}' -f $Owner, $Repo, $GitHubEnvironmentName)
+    
     $issuer = "https://token.actions.githubusercontent.com"
-    $credName = "gh-oidc-$Owner-$Repo-$GitHubEnvironmentName"
+    $credName = "ghactions-$Owner-$Repo-$GitHubEnvironmentName"
 
-    $credName = $credName.ToLower() -replace '\s+', '-'
-    $subject = $subject.ToLower() -replace '\s+', '-'
+    $credName = $credName.ToLower()
+    $subject = $subject.ToLower()
 
-    # Use Az CLI for federated credential creation
     $cmd = @(
         "az", "identity federated-credential create",
         "--name", $credName,
@@ -38,5 +37,6 @@ function New-AzFederatedCredential {
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create federated credential $credName"
     }
-    Write-Host "✔ Federated credential '$credName' created."
+    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+    Write-Host "Federated credential '$credName' created."
 }

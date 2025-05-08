@@ -26,7 +26,7 @@
 - **Environment Management:**
   - Added support for creating and managing multiple environments (e.g., dev, test, prod).
   - Each environment has its own Azure resources and GitHub configurations.
-  - Environments follow the naming pattern `{environment}-plan` and `{environment}-apply`.
+  - Environments follow a default naming pattern `{environment}-iac-plan` and `{environment}-iac-apply`, this can be overriden by parameters.
 
 ## Architecture
 
