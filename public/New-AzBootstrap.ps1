@@ -8,13 +8,7 @@ function New-AzBootstrap {
         [string]$TargetRepoName,
 
         [Parameter(Mandatory)]
-        [string]$ResourceGroupName,
-
-        [Parameter(Mandatory)]
         [string]$Location,
-
-        [Parameter(Mandatory)]
-        [string]$ManagedIdentityName,
 
         # required but can optionally use environment variables
         [string]$ArmTenantId = $env:ARM_TENANT_ID,
@@ -23,6 +17,10 @@ function New-AzBootstrap {
         # optional
         [string]$Owner, # Optional, defaults to current user/org
         [string]$InitialEnvironmentName = "dev",
+
+        [string]$ResourceGroupName = "rg-$TargetRepoName-$InitialEnvironmentName",
+        [string]$ManagedIdentityName = "mi-$TargetRepoName-$InitialEnvironmentName",
+
         [string]$PlanEnvName = "${InitialEnvironmentName}-iac-plan",
         [string]$ApplyEnvName = "${InitialEnvironmentName}-iac-apply",        
 

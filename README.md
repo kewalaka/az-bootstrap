@@ -9,6 +9,8 @@ adding support for managed identities (via OIDC), and the creation of GitHub env
 
 You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 
+![alt text](./images/az-bootstrap.gif)
+
 ## What does it do?
 
 ```mermaid
@@ -34,16 +36,13 @@ To get you started you need:
 ```powershell
 Install-Module Az-Bootstrap -Scope CurrentUser
 
+# replace these with the tenant & subscription you want to deploy to (these are random GUIDs)
 $env:ArmTenantID = "2c7d1c9d-1ee9-4be3-924a-d4c3466fa22a"
 $env:ArmSubscriptionID = "faf579e7-385d-47cd-8990-a6789973ce5f"
 
-# Example assuming you want the new repo 'my-new-demo' created under your user account
-$name = "my-new-demo"
 $params = {
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
-  TargetRepoName      = "$name"
-  ResourceGroupName   = "rg-$name-dev-nzn"
-  ManagedIdentityName = "mi-$name-dev-nzn" 
+  TargetRepoName      = "my-new-demo"
   Location            = "newzealandnorth"
 }
 New-AzBootstrap @params
@@ -51,11 +50,25 @@ New-AzBootstrap @params
 
 The above will:
 
-- Clones a starter template repository from GitHub (the "source" template repo) into a "target" repository.
-- Creates an Azure resource group and managed identity
+- Clones the repository specified by `TemplateRepoUrl` into a new repository specified by `TargetRepoName`
+- Creates an Azure resource group and managed identity (default naming: 'rg-#reponame-dev')
 - Grants Contributor and RBAC Administrator (RBAC) roles to the managed identity at the resource group level
-- Sets up federated credentials for GitHub environments ("dev_plan" and "dev_apply")
-- Configures GitHub environments, secrets, and branch protection in the new ("target") repository.
+- Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
+- Configures GitHub environments, secrets, and branch protection in the new target repository.
+
+Naming conventions can be overriden to suit, for example, to include a location in the RG and MI name, you could do this:
+
+```powershell
+$name = "my-new-demo"
+$params = {
+  TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
+  TargetRepoName      = "$name"
+  ResourceGroupName   = "rg-$name-dev-nzn-01"
+  ManagedIdentityName = "mi-$name-dev-nzn-01" 
+  Location            = "newzealandnorth"
+}
+New-AzBootstrap @params
+```
 
 ### Add and remove additional environments
 
