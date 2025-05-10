@@ -1,11 +1,11 @@
 # az-bootstrap
 
-A PowerShell module to bootstrap Azure and GitHub components for Infrastructure-as-Code (IaC) projects.
+A PowerShell module to bootstrap Azure and GitHub components for Infrastructure-as-Code (IaC) projects.  As debuted at 🌏Global Azure 2025🎉
 
 `az-bootstrap` 💖 `azd`.
 
 Azure Bootstrap augments [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview?tabs=windows&WT.mc_id=MVP_388586) (azd),
-adding support for managed identities (via OIDC), and the creation of GitHub enviornments with secrets, a default branch ruleset, and reviewers.
+adding support for managed identities (via OIDC), and the creation of GitHub environments with secrets, a default branch ruleset, and reviewers.
 
 You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 

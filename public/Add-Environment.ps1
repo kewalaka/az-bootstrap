@@ -45,7 +45,7 @@ function Add-Environment {
     $secrets = @{
         "ARM_TENANT_ID"       = $ArmTenantId
         "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId
-        "ARM_CLIENT_ID"       = $mi.clientId
+        "ARM_CLIENT_ID"       = $($mi.clientId).Trim()
     }
         
     if (-not $SkipRepoConfiguration) {      
