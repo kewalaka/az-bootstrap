@@ -14,7 +14,9 @@ jobs:
 
       - name: Run Pester Tests
         shell: pwsh
-        run: Invoke-Pester -Path ./tests
+        run: |
+          Import-Module $PSScriptRoot/az-bootstrap.psd1 -Force
+          Invoke-Pester -Path ./tests
 
       - name: Publish to PowerShell Gallery
         if: github.event_name == 'release'
