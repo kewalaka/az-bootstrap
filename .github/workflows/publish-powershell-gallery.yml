@@ -15,8 +15,7 @@ jobs:
       - name: Run Pester Tests
         shell: pwsh
         run: |
-          ls
-          Import-Module $PSScriptRoot/az-bootstrap.psd1 -Force
+          Import-Module ./az-bootstrap.psd1 -Force
           Invoke-Pester -Path ./tests
 
       - name: Publish to PowerShell Gallery
