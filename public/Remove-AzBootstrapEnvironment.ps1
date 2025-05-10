@@ -1,4 +1,4 @@
-function Remove-Environment {
+function Remove-AzBootstrapEnvironment {
   [CmdletBinding(SupportsShouldProcess)]
   param(
     [Parameter(Mandatory)]

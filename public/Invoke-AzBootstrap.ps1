@@ -1,4 +1,4 @@
-function New-AzBootstrap {
+function Invoke-AzBootstrap {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -22,7 +22,7 @@ function New-AzBootstrap {
         [string]$ManagedIdentityName = "mi-$TargetRepoName-$InitialEnvironmentName",
 
         [string]$PlanEnvName = "${InitialEnvironmentName}-iac-plan",
-        [string]$ApplyEnvName = "${InitialEnvironmentName}-iac-apply",        
+        [string]$ApplyEnvName = "${InitialEnvironmentName}-iac-apply",
 
         [ValidateSet("public", "private", "internal")]
         [string]$Visibility = "public",
@@ -120,7 +120,7 @@ function New-AzBootstrap {
             -EnableCopilotReview $BranchEnableCopilotReview
    
         # GitHub environment setup      
-        $DeploymentEnv = Add-Environment `
+        $DeploymentEnv = Add-AzBootstrapEnvironment `
             -EnvironmentName $InitialEnvironmentName `
             -ResourceGroupName $ResourceGroupName `
             -Location $Location `
@@ -144,4 +144,4 @@ function New-AzBootstrap {
     Write-Host "[az-bootstrap] Bootstrap complete. 🎉"
 }
 
-Export-ModuleMember -Function New-AzBootstrap
+Export-ModuleMember -Function Invoke-AzBootstrap

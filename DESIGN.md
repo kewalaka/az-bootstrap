@@ -31,9 +31,9 @@
 ## Architecture
 
 - **Public Interface:**
-  - `New-AzBootstrap`: Orchestrates the full bootstrap process.
-  - `Add-Environment`: Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
-  - `Remove-Environment`: Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
+  - `Invoke-AzBootstrap`: Orchestrates the full bootstrap process.
+  - `Add-AzBootstrapEnvironment`: Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
+  - `Remove-AzBootstrapEnvironment`: Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
 - **Private Functions:**
   - `Get-GitHubRepositoryInfo`, `Invoke-GitHubCliCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-GitHubEnvironment`, `Set-GitHubEnvironmentSecrets`, `Set-GitHubEnvironmentPolicy`, `New-GitHubBranchRuleset`, etc.
 - **Separation of Concerns:**
@@ -43,7 +43,7 @@
 
 ```mermaid
 flowchart TD
-    A[User runs New-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
+    A[User runs Invoke-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
     B --> C[Clone repo locally to target directory]
     C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
     D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]

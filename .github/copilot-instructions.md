@@ -68,7 +68,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Folder Structure
 
-- `public/` — Exported functions (main entry points, e.g., `New-AzBootstrap`, `Add-Environment`).
+- `public/` — Exported functions (main entry points, e.g., `Invoke-AzBootstrap`, `Add-AzBootstrapEnvironment`).
 - `private/` — Internal helpers (not exported, e.g., `New-AzResourceGroup`, `Grant-AzRBACRole`).
 - `classes/` — (Optional) PowerShell classes.
 - `tests/` — Pester tests for all public and private functions.
@@ -79,9 +79,9 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Key Functions & Responsibilities
 
-- **New-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, sets up branch protection, then creates the initial "dev" environment with Azure and GitHub configurations.
-- **Add-Environment** (public): Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
-- **Remove-Environment** (public): Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
+- **Invoke-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, sets up branch protection, then creates the initial "dev" environment with Azure and GitHub configurations.
+- **Add-AzBootstrapEnvironment** (public): Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
+- **Remove-AzBootstrapEnvironment** (public): Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
 - **Install-GitHubCLI** (public): Installs GitHub CLI if not available (downloads if needed).
 - **Set-AzBootstrapAzureInfra** (private): Creates RG, managed identity, assigns RBAC, sets up federated creds.
 - **Set-GitHubEnvironmentConfig** (private): Creates environments, sets secrets, policies. Accepts explicit Owner/Repo parameters.

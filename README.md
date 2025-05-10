@@ -45,7 +45,7 @@ $params = {
   TargetRepoName      = "my-new-demo"
   Location            = "newzealandnorth"
 }
-New-AzBootstrap @params
+Invoke-AzBootstrap @params
 ```
 
 The above will:
@@ -67,7 +67,7 @@ $params = {
   ManagedIdentityName = "mi-$name-dev-nzn-01" 
   Location            = "newzealandnorth"
 }
-New-AzBootstrap @params
+Invoke-AzBootstrap @params
 ```
 
 ### Add and remove additional environments
@@ -78,10 +78,10 @@ You can add or remove environments using:
 
 ```pwsh
 # Add a new environment (e.g., 'test')
-Add-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
+Add-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
 
 # Remove an environment (e.g., 'test')
-Remove-Environment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn"
+Remove-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn"
 ```
 
 Adding an environment will:
@@ -165,10 +165,10 @@ $params = @{
 }
 
 # Initial bootstrap
-New-AzBootstrap @params
+Invoke-AzBootstrap @params
 
 # Add a new environment (e.g., 'test')
-Add-Environment `
+Add-AzBootstrapEnvironment `
     -EnvironmentName "test" `
     -ResourceGroupName "rg-$name-$environment-nzn" `
     -Location "australiaeast" `
@@ -182,7 +182,7 @@ Add-Environment `
     -ApplyEnvironmentReviewers @("reviewer1", "reviewer2")
 
 # Remove an environment (e.g., 'test')
-Remove-Environment -EnvironmentName "$environment" -ResourceGroupName "rg-$name-$environment-nzn"
+Remove-AzBootstrapEnvironment -EnvironmentName "$environment" -ResourceGroupName "rg-$name-$environment-nzn"
 ```
 
 The above demonstrates how to:
