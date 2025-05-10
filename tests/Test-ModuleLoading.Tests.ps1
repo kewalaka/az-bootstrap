@@ -49,10 +49,10 @@ Describe "Module Loading Diagnostics" {
             Write-Host "✓ Module imported successfully"
             
             # Check if public function is available
-            if (Get-Command -Name "New-AzBootstrap" -ErrorAction SilentlyContinue) {
-                Write-Host "✓ New-AzBootstrap function is available"
+            if (Get-Command -Name "Invoke-AzBootstrap" -ErrorAction SilentlyContinue) {
+                Write-Host "✓ Invoke-AzBootstrap function is available"
             } else {
-                Write-Host "✕ New-AzBootstrap function is NOT available!"
+                Write-Host "✕ Invoke-AzBootstrap function is NOT available!"
             }
             
             # Check a private function

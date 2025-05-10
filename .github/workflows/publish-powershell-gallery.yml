@@ -2,6 +2,9 @@ name: Publish PowerShell Module
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   release:
     types: [published]
 

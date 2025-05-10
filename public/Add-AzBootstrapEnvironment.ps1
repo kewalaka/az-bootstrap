@@ -1,4 +1,4 @@
-function Add-Environment {
+function Add-AzBootstrapEnvironment {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
