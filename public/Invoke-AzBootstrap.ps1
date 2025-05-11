@@ -157,7 +157,7 @@ function Invoke-AzBootstrap {
         $initialPlanEnvName = "${InitialEnvironmentName}-iac-plan"
         $initialApplyEnvName = "${InitialEnvironmentName}-iac-apply"
 
-        Write-Host "[az-bootstrap] Adding initial environment '$InitialEnvironmentName'..."
+        Write-Host "[az-bootstrap] C initial environment '$InitialEnvironmentName'..."
         $addEnvParams = @{
             EnvironmentName               = $InitialEnvironmentName
             ResourceGroupName             = $initialRgName
@@ -188,10 +188,6 @@ function Invoke-AzBootstrap {
     }
 
     Write-Host "[az-bootstrap] Bootstrap complete for repository '$($RepoInfo.Owner)/$($RepoInfo.Repo)'. 🎉"
-    Write-Host "Next steps:"
-    Write-Host "1. Review the created GitHub repository: https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)"
-    Write-Host "2. Review the created Azure resources in https://portal.azure.com/#blade/HubsExtension/BrowseResourceGroupV2/resourceId/%2Fsubscriptions%2F$currentArmSubscriptionId%2FresourceGroups%2F$($initialRgName)"
-    Write-Host "3. Continue development in the cloned repository at $TargetDirectory"
 }
 
 Export-ModuleMember -Function Invoke-AzBootstrap
