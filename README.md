@@ -158,7 +158,7 @@ $params = @{
   InitialEnvironmentName = $environment          
 
   # GitHub users/teams required to approve deployments to apply environment
-  ApplyEnvironmentReviewers = @("reviewer1", "reviewer2")
+  ApplyEnvironmentUserReviewers = @("reviewer1", "reviewer2")
 
   # Add the owner of the repo (as determined elsewhere) as a reviewer.
   AddOwnerAsReviewer = $true
@@ -179,7 +179,7 @@ Add-AzBootstrapEnvironment `
     -ApplyEnvName "$environment-iac-apply" `
     -ArmTenantId $env:ARM_TENANT_ID `
     -ArmSubscriptionId $env:ARM_SUBSCRIPTION_ID `
-    -ApplyEnvironmentReviewers @("reviewer1", "reviewer2")
+    -ApplyEnvironmentUserReviewers @("reviewer1", "reviewer2")
 
 # Remove an environment (e.g., 'test')
 Remove-AzBootstrapEnvironment -EnvironmentName "$environment" -ResourceGroupName "rg-$name-$environment-nzn"
