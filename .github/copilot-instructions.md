@@ -21,8 +21,8 @@ Essentially, it bootstraps both the Azure and GitHub sides needed for a secure, 
 The az-bootstrap repository contains a PowerShell module designed to automate the initial setup and ongoing environment management for Infrastructure-as-Code (IaC) projects that use Azure and GitHub. It performs the following main tasks:
 
 - Clones a Template: It takes a GitHub template repository URL (e.g., a starter template for Terraform or Bicep) and creates a new repository from it for your specific project (the "target" repository).
-- Provisions Azure Core Infrastructure: It creates an Azure Resource Group and a Managed Identity within your Azure subscription.
-- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'dev-iac-plan', 'dev-iac-apply', 'prod-iac-plan', 'prod-iac-apply'), configures Federated Credentials on the Azure Managed Identity to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client ID) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
+- Provisions Azure Core Infrastructure via Bicep: It deploys an Azure Resource Group and **two** Managed Identities (one for plan, one for apply) within your Azure subscription using a subscription-scoped Bicep template (`environment-infra.bicep`). This template leverages AVM modules.
+- Configures GitHub for OIDC: It sets up GitHub Environments (e.g., 'dev-iac-plan', 'dev-iac-apply', 'prod-iac-plan', 'prod-iac-apply'), configures Federated Credentials on the Azure Managed Identities to trust these environments, and sets necessary secrets (like Azure tenant ID, subscription ID, client IDs) in the GitHub environments. This allows GitHub Actions workflows in the target repository to securely authenticate to Azure without needing long-lived secrets.
 - Sets up Branch Protection: It configures branch protection rules on the target repository to enforce policies, likely related to the configured environments.
 - Assigns RBAC Roles: It grants the created Managed Identity the 'Contributor' and 'RBAC Administrator' roles on the Resource Group, enabling it to deploy and manage resources and permissions within that scope.
 - Manages Multiple Environments: It supports adding, configuring, and removing additional environments (dev, test, prod, etc.) after initial setup, with each environment having its own Azure resources and GitHub environments.
@@ -31,11 +31,11 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Key Features
 
-- Creates a new GitHub repository from a template using `gh repo create --template` (not just cloning).
+- Creates a new GitHub repository from a template using `gh repo create --template`.
 - Clones the new repository locally for further setup.
-- Creates an Azure resource group and managed identity.
-- Assigns Contributor and RBAC Administrator roles to the managed identity at the resource group level.
-- Sets up federated credentials for GitHub environments (plan, apply, etc.).
+- Creates Azure infrastructure (Resource Group, **two** Managed Identities - one for plan, one for apply) using a subscription-scoped Bicep template (`environment-infra.bicep`) which utilizes AVM modules.
+- Assigns Contributor and "Role Based Access Control Administrator" roles to the managed identities at the resource group level via Bicep.
+- Sets up federated credentials for GitHub environments (plan, apply, etc.) on the appropriate Managed Identities via Bicep.
 - Configures GitHub environments, secrets, and branch protection in the new solution repository.
 - Supports ongoing environment management (adding/removing environments).
 - Separates branch protection from environment-specific configurations.
@@ -79,19 +79,19 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 
 ## Key Functions & Responsibilities
 
-- **Invoke-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, sets up branch protection, then creates the initial "dev" environment with Azure and GitHub configurations.
-- **Add-AzBootstrapEnvironment** (public): Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
+- **Invoke-AzBootstrap** (public): Orchestrates the full bootstrap process. Creates a new GitHub repo from a template, clones it, sets up branch protection, then creates the initial "dev" environment.
+  - Key parameters for initial Azure setup include `ResourceGroupName` (optional), `PlanManagedIdentityName` (optional), `ApplyManagedIdentityName` (optional).
+- **Add-AzBootstrapEnvironment** (public): Creates a new environment with associated Azure infrastructure (via Bicep) and GitHub environment configurations.
+  - Key parameters include `PlanManagedIdentityName` (mandatory), `ApplyManagedIdentityName` (mandatory).
 - **Remove-AzBootstrapEnvironment** (public): Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
 - **Install-GitHubCLI** (public): Installs GitHub CLI if not available (downloads if needed).
-- **Set-AzBootstrapAzureInfra** (private): Creates RG, managed identity, assigns RBAC, sets up federated creds.
-- **Set-GitHubEnvironmentConfig** (private): Creates environments, sets secrets, policies. Accepts explicit Owner/Repo parameters.
-- **Set-GitHubBranchProtection** (private): Sets branch protection rules. Separate from environment configuration.
-- **Grant-AzRBACRole** (private): Assigns a role to a principal at the RG scope.
+- **New-AzBicepDeployment** (private): Orchestrates the deployment of the `environment-infra.bicep` template at the subscription scope. This Bicep template is responsible for creating/updating the Resource Group, the plan Managed Identity, the apply Managed Identity, assigning RBAC roles, and setting up federated credentials.
+  - Key parameters include `PlanManagedIdentityName` (mandatory), `ApplyManagedIdentityName` (mandatory).
 - **Get-GitHubRepositoryInfo** (private): Gets repo info from explicit parameters, git, or Codespaces env.
 - **Invoke-GitHubCliCommand** (private): Runs a GitHub CLI command.
 - **New-AzEnvironmentInfrastructure** (private): Creates the Azure infrastructure for a specific environment.
-- **New-AzResourceGroup**, **New-AzManagedIdentity**, **New-AzFederatedCredential**: Atomic Azure resource operations.
-- **New-GitHubEnvironment**, **Set-GitHubEnvironmentSecrets**, **Set-GitHubEnvironmentPolicy**, **New-GitHubBranchRuleset**: Atomic GitHub repo operations.
+- **New-GitHubEnvironment**, **Set-GitHubEnvironmentSecrets**, **Set-GitHubEnvironmentPolicy**,
+- **New-GitHubBranchRuleset**: Atomic GitHub repo operations.
 
 ---
 
@@ -131,6 +131,8 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 - All external calls to Azure or GitHub should be mockable for tests
 - The module is intended for both human and automated (CI/CD) use
 - If in doubt, prefer explicit, parameterized, and testable code
+- Azure infrastructure is primarily provisioned by `New-AzBicepDeployment` calling `az deployment sub create` with the `templates/environment-infra.bicep` file.
+- The Bicep template handles RG creation, creation of **two** MIs (plan and apply), federated credentials for both, and RBAC assignments (Contributor, Role Based Access Control Administrator) for both.
 
 ---
 

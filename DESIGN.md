@@ -2,72 +2,65 @@
 
 ## Overview
 
-`az-bootstrap` is a PowerShell module designed to automate the setup of Azure and GitHub environments for Infrastructure-as-Code (IaC) projects. It is inspired by the experience of using `azd up`, but is focused on bootstrapping the foundational cloud and repository configuration for secure, automated deployments.
+`az-bootstrap` is a PowerShell module to automate Azure and GitHub environment setup for Infrastructure-as-Code (IaC) projects. It is inspired by `azd up` but is focused on secure, OIDC-based, automated deployments and ongoing environment management.
 
-## Template/Target Repository Pattern
+## Architecture & Workflow
 
-- **Source (Template) Repository:**
-  - A GitHub repository (such as [terraform-azure-starter-template](https://github.com/kewalaka/terraform-azure-starter-template)) that serves as a starting point for new IaC projects.
-  - This repository is cloned by the module to create a new solution repository.
-- **Target (Solution) Repository:**
-  - The new repository created from the template, where the DevOps engineer will build their solution.
-  - The module configures this repository with GitHub environments, secrets, and branch protections.
+- **Template/Target Repo Pattern:**
+  - Clones a GitHub template repo to create a new solution repo.
+  - Configures the new repo with GitHub environments, secrets, and branch protection.
+- **Azure Infra via Bicep:**
+  - Uses a subscription-scoped Bicep template (`environment-infra.bicep`) to provision:
+    - Resource Group
+    - Two Managed Identities (plan/apply)
+    - Federated credentials for GitHub OIDC
+    - RBAC assignments (Contributor, RBAC Admin)
+- **GitHub Configuration:**
+  - Sets up environments (e.g., dev-iac-plan, dev-iac-apply), secrets, and policies.
+  - Reviewer/team/secret params are optional and skipped if empty.
+- **Extensible:**
+  - Designed for future support of Azure DevOps, more policies, and additional cloud providers.
 
-## Key Features
+## Key Functions
 
-- **Repo Cloning:** Clones a specified GitHub template repository to a local directory.
-- **Azure Infra:** Creates a resource group and managed identity, and configures federated credentials for OIDC-based GitHub Actions workflows.
-- **GitHub Environments:** Creates GitHub environments (PLAN, APPLY, etc.), sets secrets, and applies branch protection and deployment policies.
-- **Extensible:** Designed to support both GitHub and Azure DevOps in the future.
-- **RBAC Assignment:** Grants Contributor and RBAC Administrator roles to the managed identity at the resource group level for full deployment and access control capabilities.
+- **Invoke-AzBootstrap:** Orchestrates full bootstrap (repo, infra, branch protection, initial environment).
+- **Add-AzBootstrapEnvironment:** Adds a new environment (Azure infra + GitHub config).
+- **Remove-AzBootstrapEnvironment:** Removes an environment.
+- **Install-GitHubCLI:** Ensures GitHub CLI is available.
+- **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
+- **New-GitHubEnvironment/Secrets/Policy:** Manages GitHub environments and policies.
 
-## Updated Features
+## Design Principles
 
-- **Environment Management:**
-  - Added support for creating and managing multiple environments (e.g., dev, test, prod).
-  - Each environment has its own Azure resources and GitHub configurations.
-  - Environments follow a default naming pattern `{environment}-iac-plan` and `{environment}-iac-apply`, this can be overriden by parameters.
+- Public functions orchestrate workflows; private functions do atomic tasks.
+- All state is passed via parameters (no magic globals).
+- Idempotent: handle 'already exists' gracefully.
+- Cover logic using Pester tests; external calls are mockable.
+- Use approved PowerShell verbs for function names.
 
-## Architecture
+## Folder Structure
 
-- **Public Interface:**
-  - `Invoke-AzBootstrap`: Orchestrates the full bootstrap process.
-  - `Add-AzBootstrapEnvironment`: Creates a new environment with associated Azure infrastructure and GitHub environment configurations.
-  - `Remove-AzBootstrapEnvironment`: Removes an environment by deleting its GitHub environments and optionally its Azure infrastructure.
-- **Private Functions:**
-  - `Get-GitHubRepositoryInfo`, `Invoke-GitHubCliCommand`, `New-AzResourceGroup`, `New-AzManagedIdentity`, `New-AzFederatedCredential`, `New-GitHubEnvironment`, `Set-GitHubEnvironmentSecrets`, `Set-GitHubEnvironmentPolicy`, `New-GitHubBranchRuleset`, etc.
-- **Separation of Concerns:**
-  - Each function is responsible for a single task, making the module easy to maintain and extend.
+- `public/`: Exported entry points
+- `private/`: Internal helpers
+- `templates/`: Bicep templates
+- `tests/`: Pester tests
 
-## Updated Flow Diagram
+## Testing
 
-```mermaid
-flowchart TD
-    A[User runs Invoke-AzBootstrap] --> B[Create new solution repo based on supplied GitHub template]
-    B --> C[Clone repo locally to target directory]
-    C --> D[Create Azure Resource Group, Managed Identity, set RBAC]
-    D --> E[Set up GitHub Environments, Secrets, Branch Protections in solution repo]
-    E --> F[Add or manage additional environments as needed]
-    F --> G[Ready for IaC development!]
-```
+- Uses [Pester](https://pester.dev/) for unit and integration tests.
+- All external calls (az, gh, git) are mockable.
+- Run all tests with:
 
-## GitHub Environment and Policy Management
+  ```powershell
+  set-executionpolicy -scope process -executionpolicy bypass
+  Invoke-Pester -Path ./tests/
+  ```
 
-- **New-GitHubEnvironment**: Now supports optional ARM parameters (TenantId, SubscriptionId, ClientId). If all are provided, it will automatically set these as secrets in the created environment using `Set-GitHubEnvironmentSecrets`.
-- **Set-GitHubEnvironmentSecrets**: Robustly sets ARM secrets for a given environment, skipping secret configuration if any required value is missing.
-- **Set-GitHubEnvironmentPolicy**: Supports both user and team reviewers. Reviewer IDs are resolved automatically. If no reviewers are provided, reviewer configuration is skipped. Protected branches default to `main` but can be customized.
-- All reviewer/team/secret parameters are optional and, if not provided or empty, the related configuration is skipped.
+## Extensibility & Future Enhancements
 
-## Parameter Handling Improvements
-
-- All public and private functions now use sensible defaults for optional parameters.
-- Reviewer and team arrays, as well as ARM secret parameters, are optional and skipped if empty.
-- No use of magic globals; all state is passed explicitly or via standard environment variables.
-
-## Extensibility
-
-- The module is structured to allow easy addition of new cloud providers, repo hosts, or environment policies.
-- Private functions can be extended or replaced as requirements evolve.
+- Add support for Azure DevOps and other repo hosts.
+- More granular policy and RBAC configuration.
+- Interactive wrappers for onboarding.
 
 ## Security
 

@@ -1,55 +1,60 @@
 function Invoke-AzBootstrap {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
-        [Parameter(Mandatory)]
+        #
+        # required parameters
+        #
+        [Parameter(Mandatory = $true)]
         [string]$TemplateRepoUrl,
-
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory = $true)]
         [string]$TargetRepoName,
+        [Parameter(Mandatory = $true)]
+        [string]$Location, 
 
-        [Parameter(Mandatory)]
-        [string]$Location,
-
-        # required but can optionally use environment variables
-        [string]$ArmTenantId = $env:ARM_TENANT_ID,
-        [string]$ArmSubscriptionId = $env:ARM_SUBSCRIPTION_ID,
-        
-        # optional
-        [string]$Owner, # Optional, defaults to current user/org
+        #
+        # optional parameters
+        #
+        [string]$TargetDirectory, # if not specified, the repo will be cloned to ./$TargetRepoName
         [string]$InitialEnvironmentName = "dev",
 
-        [string]$ResourceGroupName = "rg-$TargetRepoName-$InitialEnvironmentName",
-        [string]$ManagedIdentityName = "mi-$TargetRepoName-$InitialEnvironmentName",
+        # github repo parameters
+        [string]$GitHubOwner, # if not specified, the current user will be used
+        [ValidateSet('private', 'public', 'internal')]
+        [string]$GitHubVisibility,
 
-        [string]$PlanEnvName = "${InitialEnvironmentName}-iac-plan",
-        [string]$ApplyEnvName = "${InitialEnvironmentName}-iac-apply",
+        # azure parameters
+        [string]$ResourceGroupName,
+        [string]$PlanManagedIdentityName,
+        [string]$ApplyManagedIdentityName,
+ 
+        # github branch protection
+        [string]$ProtectedBranchName = 'default-branch-protection',
+        [int]$BranchRequiredApprovals = 1,
+        [bool]$BranchDismissStaleReviews = $true,
+        [bool]$BranchRequireCodeOwnerReview = $false,
+        [bool]$BranchRequireLastPushApproval = $false,
+        [bool]$BranchRequireThreadResolution = $true,
+        [string[]]$BranchAllowedMergeMethods = @("squash"),
+        [bool]$BranchEnableCopilotReview = $true,
 
-        [ValidateSet("public", "private", "internal")]
-        [string]$Visibility = "public",
+        # deployment reviewers
+        [string[]]$ApplyEnvironmentReviewers,
+        [string[]]$ApplyEnvironmentTeamReviewers,
+        [bool]$AddOwnerAsReviewer = $true
 
-        [string]$TargetDirectory, # defaults to ".\$targetreponame"
-
-        [string[]]$ApplyEnvironmentReviewers = @(), # Default reviewers for the Apply environment (empty array = no reviewers)
-
-        [string]$ProtectedBranchName = "main", # Default branch to protect
-        
-        [bool]$RequirePR = $true, # Default: Require PR for protected branch
-        
-        [int]$RequiredReviewers = 0, # Default: Required reviewers for protected branch
-
-        # add the branch ruleset defaults
-        [string]$BranchRulesetName = "main", # Default branch ruleset name
-        [string]$BranchTargetPattern = "main", # Default branch target pattern
-        [int]$BranchRequiredApprovals = 1, # Default required approvals for branch ruleset
-        [bool]$BranchDismissStaleReviews = $true, # Default: Dismiss stale reviews on push
-        [bool]$BranchRequireCodeOwnerReview = $false, # Default: Require code owner review
-        [bool]$BranchRequireLastPushApproval = $false, # Default: Require last push approval
-        [bool]$BranchRequireThreadResolution = $false, # Default: Require thread resolution
-        [string[]]$BranchAllowedMergeMethods = @("squash"), # Default allowed merge methods
-        [bool]$BranchEnableCopilotReview = $true, # Default: Enable Copilot review
-
-        [bool]$AddOwnerAsReviewer = $true # Default: Add owner as reviewer for the Apply environment
     )
+
+    #region: check parameters
+    if (-not $TemplateRepoUrl -or [string]::IsNullOrWhiteSpace($TemplateRepoUrl)) {
+        throw "Template repository URL is required."
+    }
+    if (-not $TargetRepoName -or [string]::IsNullOrWhiteSpace($TargetRepoName)) {
+        throw "Target repository name is required."
+    }
+    if (-not $Location -or [string]::IsNullOrWhiteSpace($Location)) {
+        throw "Location is required."
+    }
+    #endregion
 
     #region: check target directory
     if (-not $TargetDirectory -or [string]::IsNullOrWhiteSpace($TargetDirectory)) {
@@ -67,15 +72,22 @@ function Invoke-AzBootstrap {
         throw "GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
     }
 
-    Write-Host "[az-bootstrap] Checking Az CLI authentication status..."
-    if (-not (Test-AzCli -TenantId $ArmTenantId -SubscriptionId $ArmSubscriptionId)) {
-        throw "Az CLI is not authenticated. Please run 'az login' to authenticate."
+    Write-Host "[az-bootstrap] Retrieving current Azure subscription and tenant details..."
+    $azContext = Get-AzCliContext
+    $currentArmSubscriptionId = $azContext.SubscriptionId
+    $currentArmTenantId = $azContext.TenantId
+    #endregion
+
+    if (-not $currentArmSubscriptionId -or -not $currentArmTenantId) {
+        throw "Failed to retrieve current Azure Subscription ID and Tenant ID. Ensure you are logged in with 'az login' and a default subscription is set."
     }
+    Write-Host "[az-bootstrap] Using Azure Tenant: $currentArmTenantId, authenticated as: $($azContext.UserName | Out-String -NoNewline)"
+    Write-Host "[az-bootstrap] Using Azure Subscription: $($azContext.SubscriptionName | Out-String -NoNewline), id: $currentArmSubscriptionId"
     #endregion
 
     # GitHub repo
-    $ownerArg = if ($Owner) { "--owner $Owner" } else { "" }
-    $visibilityArg = switch ($Visibility) {
+    $ownerArg = if ($GitHubOwner) { "--owner $GitHubOwner" } else { "" }
+    $visibilityArg = switch ($GitHubVisibility) {
         "private" { "--private" }
         "internal" { "--internal" }
         Default { "--public" }
@@ -87,7 +99,7 @@ function Invoke-AzBootstrap {
         throw "Failed to create new GitHub repository from template."
     }
 
-    $actualOwner = if ($Owner) { $Owner } else {
+    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
         # Try to get the current user/org from gh CLI
         $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
         if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
@@ -102,46 +114,84 @@ function Invoke-AzBootstrap {
 
     Push-Location $TargetDirectory
     try {
-        $repoInfo = Get-GitHubRepositoryInfo
-        if (-not $repoInfo) {
-            throw "Could not determine repository information from git remote or overrides."
+        $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $actualOwner -OverrideRepo $TargetRepoName
+        if (-not $RepoInfo) {
+            throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide the -Owner parameter."
         }
 
-        New-GitHubBranchRuleset -Owner $repoInfo.Owner `
-            -Repo $repoInfo.Repo `
-            -RulesetName "main" `
+        Write-Host "[az-bootstrap] Setting up branch protection for '$($RepoInfo.Owner)/$($RepoInfo.Repo)' on branch '$ProtectedBranchName'..."
+        New-GitHubBranchRuleset -Owner $RepoInfo.Owner `
+            -Repo $RepoInfo.Repo `
+            -RulesetName "default-branch-protection" `
             -TargetPattern $ProtectedBranchName `
-            -RequiredApprovals $RequiredReviewers `
+            -RequiredApprovals $BranchRequiredApprovals `
             -DismissStaleReviews $BranchDismissStaleReviews `
             -RequireCodeOwnerReview $BranchRequireCodeOwnerReview `
             -RequireLastPushApproval $BranchRequireLastPushApproval `
             -RequireThreadResolution $BranchRequireThreadResolution `
             -AllowedMergeMethods $BranchAllowedMergeMethods `
             -EnableCopilotReview $BranchEnableCopilotReview
-   
-        # GitHub environment setup      
-        $DeploymentEnv = Add-AzBootstrapEnvironment `
-            -EnvironmentName $InitialEnvironmentName `
-            -ResourceGroupName $ResourceGroupName `
-            -Location $Location `
-            -ManagedIdentityName $ManagedIdentityName `
-            -ArmTenantId $ArmTenantId `
-            -ArmSubscriptionId $ArmSubscriptionId `
-            -Owner $repoInfo.Owner `
-            -Repo $repoInfo.Repo `
-            -PlanEnvName $PlanEnvName `
-            -ApplyEnvName $ApplyEnvName `
-            -ApplyEnvironmentReviewers $ApplyEnvironmentReviewers `
-            -ApplyEnvironmentTeamReviewers $ApplyEnvironmentTeamReviewers `
-            -AddOwnerAsReviewer $AddOwnerAsReviewer
+
+        # Construct names for the initial environment
+        $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
+            $ResourceGroupName
+        }
+        else {
+            "rg-$($RepoInfo.Repo)-$InitialEnvironmentName"
+        }
         
-        Write-Host "[az-bootstrap] $($DeploymentEnv.EnvironmentName) environment created."
+        $planMiName = if (-not [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
+            $PlanManagedIdentityName
+        }
+        else {
+            "mi-$($RepoInfo.Repo)-$InitialEnvironmentName-plan"
+        }
+
+        $applyMiName = if (-not [string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
+            $ApplyManagedIdentityName
+        }
+        else {
+            $planMiName.Replace("-plan", "-apply")
+        }
+
+        $initialPlanEnvName = "${InitialEnvironmentName}-iac-plan"
+        $initialApplyEnvName = "${InitialEnvironmentName}-iac-apply"
+
+        Write-Host "[az-bootstrap] Adding initial environment '$InitialEnvironmentName'..."
+        $addEnvParams = @{
+            EnvironmentName               = $InitialEnvironmentName
+            ResourceGroupName             = $initialRgName
+            Location                      = $Location
+            PlanManagedIdentityName       = $planMiName
+            ApplyManagedIdentityName      = $applyMiName
+            ArmTenantId                   = $currentArmTenantId
+            ArmSubscriptionId             = $currentArmSubscriptionId
+            GitHubOwner                   = $RepoInfo.Owner
+            GitHubRepo                    = $RepoInfo.Repo
+            PlanEnvName                   = $initialPlanEnvName
+            ApplyEnvName                  = $initialApplyEnvName
+            ApplyEnvironmentReviewers     = $ApplyEnvironmentReviewers
+            ApplyEnvironmentTeamReviewers = $ApplyEnvironmentTeamReviewers
+            AddOwnerAsReviewer            = $AddOwnerAsReviewer
+        }
+
+        $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams
+
+        Write-Host "[az-bootstrap] Initial environment '$($DeploymentEnv.EnvironmentName)' created successfully."
+    }
+    catch {
+        Write-Error "Failed to add initial environment '$InitialEnvironmentName': $_"
+        throw
     }
     finally {
         Pop-Location
     }
 
-    Write-Host "[az-bootstrap] Bootstrap complete. 🎉"
+    Write-Host "[az-bootstrap] Bootstrap complete for repository '$($RepoInfo.Owner)/$($RepoInfo.Repo)'. 🎉"
+    Write-Host "Next steps:"
+    Write-Host "1. Review the created GitHub repository: https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)"
+    Write-Host "2. Review the created Azure resources in https://portal.azure.com/#blade/HubsExtension/BrowseResourceGroupV2/resourceId/%2Fsubscriptions%2F$currentArmSubscriptionId%2FresourceGroups%2F$($initialRgName)"
+    Write-Host "3. Continue development in the cloned repository at $TargetDirectory"
 }
 
 Export-ModuleMember -Function Invoke-AzBootstrap
