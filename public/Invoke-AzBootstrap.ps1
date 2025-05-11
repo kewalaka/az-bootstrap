@@ -72,7 +72,7 @@ function Invoke-AzBootstrap {
         throw "GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
     }
 
-    Write-Host "[az-bootstrap] Retrieving current Azure subscription and tenant details..."
+    Write-Verbose "[az-bootstrap] Retrieving current Azure subscription and tenant details..."
     $azContext = Get-AzCliContext
     $currentArmSubscriptionId = $azContext.SubscriptionId
     $currentArmTenantId = $azContext.TenantId
@@ -176,8 +176,6 @@ function Invoke-AzBootstrap {
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams
-
-        Write-Host "[az-bootstrap] Initial environment '$($DeploymentEnv.EnvironmentName)' created successfully."
     }
     catch {
         Write-Error "Failed to add initial environment '$InitialEnvironmentName': $_"
@@ -187,7 +185,9 @@ function Invoke-AzBootstrap {
         Pop-Location
     }
 
-    Write-Host "[az-bootstrap] Bootstrap complete for repository '$($RepoInfo.Owner)/$($RepoInfo.Repo)'. 🎉"
+    Write-Host "[az-bootstrap] Repository  : '$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
+    Write-Host "[az-bootstrap] ...cloned to: '$($TargetDirectory)'."
+    Write-Host "[az-bootstrap] Azure Bootstrap complete. 🎉"
 }
 
 Export-ModuleMember -Function Invoke-AzBootstrap

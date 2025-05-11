@@ -6,7 +6,7 @@ function Get-AzCliContext {
         throw "Azure CLI (az) is not installed or not found in PATH. Please install it and ensure it's accessible."
     }
 
-    Write-Host "[az-bootstrap] Retrieving Azure CLI context (Subscription ID and Tenant ID)..."
+    Write-Verbose "[az-bootstrap] Retrieving Azure CLI context (Subscription ID and Tenant ID)..."
     $accountInfoJson = az account show --query "{id:id, name:name, tenantId:tenantId, user:user.name}" --output json
     
     if ($LASTEXITCODE -ne 0 -or -not $accountInfoJson) {

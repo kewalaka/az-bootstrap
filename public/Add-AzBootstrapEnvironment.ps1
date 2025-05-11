@@ -113,7 +113,7 @@ function Add-AzBootstrapEnvironment {
     -AddOwnerAsReviewer $AddOwnerAsReviewer 
 
   Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "[az-bootstrap] Environment '$EnvironmentName' with GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
+  Write-Host "[az-bootstrap] GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
 
   
   return [PSCustomObject]@{
