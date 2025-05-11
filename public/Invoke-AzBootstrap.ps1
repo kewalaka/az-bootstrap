@@ -157,7 +157,7 @@ function Invoke-AzBootstrap {
         $initialPlanEnvName = "${InitialEnvironmentName}-iac-plan"
         $initialApplyEnvName = "${InitialEnvironmentName}-iac-apply"
 
-        Write-Host "[az-bootstrap] C initial environment '$InitialEnvironmentName'..."
+        Write-Host "[az-bootstrap] Creating initial environment '$InitialEnvironmentName'..."
         $addEnvParams = @{
             EnvironmentName               = $InitialEnvironmentName
             ResourceGroupName             = $initialRgName
