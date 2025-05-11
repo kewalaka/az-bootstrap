@@ -20,7 +20,7 @@ function Add-AzBootstrapEnvironment {
 
     [string]$ApplyEnvNameOverride,
 
-    [string[]]$ApplyEnvironmentReviewers,
+    [string[]]$ApplyEnvironmentUserReviewers,
 
     [string[]]$ApplyEnvironmentTeamReviewers,
 
@@ -63,7 +63,7 @@ function Add-AzBootstrapEnvironment {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
   }
 
-  Write-Host "[az-bootstrap] Setting up Azure infrastructure for environment '$EnvironmentName'..."
+  Write-Host "[az-bootstrap] Deploying Azure infrastructure for '$EnvironmentName' environment via Bicep..."
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
     -ResourceGroupName $ResourceGroupName `
     -Location $Location `
@@ -108,7 +108,7 @@ function Add-AzBootstrapEnvironment {
   Set-GitHubEnvironmentPolicy -Owner $RepoInfo.Owner `
     -Repo $RepoInfo.Repo `
     -EnvironmentName $actualApplyEnvName `
-    -Reviewers $ApplyEnvironmentReviewers `
+    -UserReviewers $ApplyEnvironmentUserReviewers `
     -TeamReviewers $ApplyEnvironmentTeamReviewers `
     -AddOwnerAsReviewer $AddOwnerAsReviewer 
 

@@ -38,7 +38,7 @@ function Invoke-AzBootstrap {
         [bool]$BranchEnableCopilotReview = $true,
 
         # deployment reviewers
-        [string[]]$ApplyEnvironmentReviewers,
+        [string[]]$ApplyEnvironmentUserReviewers,
         [string[]]$ApplyEnvironmentTeamReviewers,
         [bool]$AddOwnerAsReviewer = $true
 
@@ -170,7 +170,7 @@ function Invoke-AzBootstrap {
             GitHubRepo                    = $RepoInfo.Repo
             PlanEnvName                   = $initialPlanEnvName
             ApplyEnvName                  = $initialApplyEnvName
-            ApplyEnvironmentReviewers     = $ApplyEnvironmentReviewers
+            ApplyEnvironmentUserReviewers     = $ApplyEnvironmentUserReviewers
             ApplyEnvironmentTeamReviewers = $ApplyEnvironmentTeamReviewers
             AddOwnerAsReviewer            = $AddOwnerAsReviewer
         }

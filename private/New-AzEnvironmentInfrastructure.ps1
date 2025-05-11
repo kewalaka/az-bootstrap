@@ -1,4 +1,4 @@
-function New-AzBicepDeployment {
+function New-AzEnvironmentInfrastructure {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory)]
@@ -23,26 +23,25 @@ function New-AzBicepDeployment {
     [string]$ArmSubscriptionId
   )
 
-  $bicepTemplateFile = Join-Path $PSScriptRoot '..' 'templates' 'environment-infra.bicep'
+  $bicepTemplateFile = Join-Path $PSScriptRoot '..', 'templates', 'environment-infra.bicep' # Updated template path
   if (-not (Test-Path $bicepTemplateFile)) {
     throw "Bicep template file not found at '$bicepTemplateFile'."
   }
   $resolvedBicepTemplateFile = Resolve-Path $bicepTemplateFile -ErrorAction Stop
 
-  Write-Host "[az-bootstrap] This may take a few minutes, please wait..."
+  Write-Host "[az-bootstrap] Deploying Azure infrastructure for '$EnvironmentName' environment via Bicep template '$resolvedBicepTemplateFile' at subscription scope..."
 
   $bicepParams = @{
-    resourceGroupName          = $ResourceGroupName
-    location                   = $Location # Bicep template uses this for RG and MI location
-    planManagedIdentityName    = $PlanManagedIdentityName # For the primary/plan MI
-    applyManagedIdentityName   = $ApplyManagedIdentityName
-    gitHubOwner                = $GitHubOwner.ToLower()
-    gitHubRepo                 = $GitHubRepo.ToLower()
-    gitHubPlanEnvironmentName  = $PlanEnvName.ToLower()
+    resourceGroupName         = $ResourceGroupName
+    location                  = $Location # Bicep template uses this for RG and MI location
+    planManagedIdentityName       = $PlanManagedIdentityName # For the primary/plan MI
+    applyManagedIdentityName  = $ApplyManagedIdentityName
+    gitHubOwner               = $GitHubOwner.ToLower()
+    gitHubRepo                = $GitHubRepo.ToLower()
+    gitHubPlanEnvironmentName = $PlanEnvName.ToLower()
     gitHubApplyEnvironmentName = $ApplyEnvName.ToLower()
   }
-  # Remove any parameters with $null values, as Bicep might error on `paramName=$null`
-  $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$($_.Name)=$($_.Value)" }
+  $bicepParamsJson = $bicepParams | ConvertTo-Json -Depth 5 -Compress
 
   Write-Verbose "[az-bootstrap] Bicep parameters for subscription deployment: $bicepParamsJson"
 
@@ -53,14 +52,11 @@ function New-AzBicepDeployment {
     "deployment", "sub", "create",
     "--name", $deploymentName,
     "--location", $Location, # Location for the deployment metadata
-    "--template-file", $resolvedBicepTemplateFile.Path,
+    "--template-file", $resolvedBicepTemplateFile,
+    "--parameters", $bicepParamsJson,
     "--subscription", $ArmSubscriptionId,
     "--output", "json"
   )
-  if ($activeBicepParams.Count -gt 0) {
-    $azCliArgs += "--parameters"
-    $azCliArgs += $activeBicepParams # Add each KEY=VALUE pair as a separate argument
-  }
 
   Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
@@ -79,33 +75,44 @@ function New-AzBicepDeployment {
 
   $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
   if (-not $deploymentOutput -or -not $deploymentOutput.properties -or -not $deploymentOutput.properties.outputs) {
-    Write-Error "[az-bootstrap] Bicep deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
-    throw "Bicep deployment for environment '$EnvironmentName' did not produce expected outputs."
+      Write-Error "[az-bootstrap] Bicep deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
+      throw "Bicep deployment for environment '$EnvironmentName' did not produce expected outputs."
   }
 
   $planManagedIdentityClientId = $null
+  $planManagedIdentityPrincipalId = $null
   $applyManagedIdentityClientId = $null
+  $applyManagedIdentityPrincipalId = $null
 
-  $planManagedIdentityClientId = $deploymentOutput.properties.outputs.planManagedIdentityClientId.value
-
-  if (-not $planManagedIdentityClientId) {
-    throw "Failed to retrieve Primary Managed Identity Client ID from Bicep deployment for environment '$EnvironmentName'."
+  if ($deploymentOutput.properties.outputs.planManagedIdentityClientId) {
+    $planManagedIdentityClientId = $deploymentOutput.properties.outputs.planManagedIdentityClientId.value
+  }
+  if ($deploymentOutput.properties.outputs.planManagedIdentityPrincipalId) {
+    $planManagedIdentityPrincipalId = $deploymentOutput.properties.outputs.planManagedIdentityPrincipalId.value
+  }
+  if ($deploymentOutput.properties.outputs.applyManagedIdentityClientId) {
+    $applyManagedIdentityClientId = $deploymentOutput.properties.outputs.applyManagedIdentityClientId.value
+  }
+  if ($deploymentOutput.properties.outputs.applyManagedIdentityPrincipalId) {
+    $applyManagedIdentityPrincipalId = $deploymentOutput.properties.outputs.applyManagedIdentityPrincipalId.value
   }
 
-  $applyManagedIdentityClientId = $deploymentOutput.properties.outputs.applyManagedIdentityClientId.value
-
-  if (-not $applyManagedIdentityClientId) {
-    throw "Failed to retrieve Apply-Specific Managed Identity Client ID from Bicep deployment when CreateSeparateApplyMI was true for environment '$EnvironmentName'."
+  if (-not $planManagedIdentityClientId -or -not $planManagedIdentityPrincipalId) {
+    throw "Failed to retrieve Plan Managed Identity Client ID or Principal ID from Bicep deployment for environment '$EnvironmentName'."
+  }
+  if (-not $applyManagedIdentityClientId -or -not $applyManagedIdentityPrincipalId) {
+    throw "Failed to retrieve Apply Managed Identity Client ID or Principal ID from Bicep deployment for environment '$EnvironmentName'."
   }
   
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' provisioning state: $($deploymentOutput.properties.provisioningState)."
+  Write-Host "[az-bootstrap] Bicep deployment for '$EnvironmentName' succeeded."
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
   
   return [PSCustomObject]@{
-    PlanManagedIdentityClientId  = $planManagedIdentityClientId
-    ApplyManagedIdentityClientId = $applyManagedIdentityClientId
+    PlanManagedIdentityClientId    = $planManagedIdentityClientId
+    PlanManagedIdentityPrincipalId = $planManagedIdentityPrincipalId
+    ApplyManagedIdentityClientId      = $applyManagedIdentityClientId 
+    ApplyManagedIdentityPrincipalId   = $applyManagedIdentityPrincipalId 
   }
 }
 
