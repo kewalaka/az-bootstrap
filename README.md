@@ -36,10 +36,6 @@ To get you started you need:
 ```powershell
 Install-Module Az-Bootstrap -Scope CurrentUser
 
-# replace these with the tenant & subscription you want to deploy to (these are random GUIDs)
-$env:ArmTenantID = "2c7d1c9d-1ee9-4be3-924a-d4c3466fa22a"
-$env:ArmSubscriptionID = "faf579e7-385d-47cd-8990-a6789973ce5f"
-
 $params = {
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
   TargetRepoName      = "my-new-demo"
@@ -51,8 +47,8 @@ Invoke-AzBootstrap @params
 The above will:
 
 - Clones the repository specified by `TemplateRepoUrl` into a new repository specified by `TargetRepoName`
-- Creates an Azure resource group and managed identity (default naming: 'rg-#reponame-dev')
-- Grants Contributor and RBAC Administrator (RBAC) roles to the managed identity at the resource group level
+- Creates an Azure resource group and two managed identities (default naming: 'rg-#reponame-dev-plan' and 'rg-#reponame-dev-apply'
+- Grants Reader to the plan identity and Contributor + RBAC Administrator (RBAC) roles to the apply managed identity at the resource group level
 - Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
 - Configures GitHub environments, secrets, and branch protection in the new target repository.
 
@@ -61,11 +57,12 @@ Naming conventions can be overriden to suit, for example, to include a location 
 ```powershell
 $name = "my-new-demo"
 $params = {
-  TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
-  TargetRepoName      = "$name"
-  ResourceGroupName   = "rg-$name-dev-nzn-01"
-  ManagedIdentityName = "mi-$name-dev-nzn-01" 
-  Location            = "newzealandnorth"
+  TemplateRepoUrl          = "https://github.com/kewalaka/terraform-azure-starter-template"
+  TargetRepoName           = "$name"
+  ResourceGroupName        = "rg-$name-dev-nzn-01"
+  PlanManagedIdentityName  = "mi-$name-dev-nzn-01-plan"
+  ApplyManagedIdentityName = "mi-$name-dev-nzn-01-plan" 
+  Location                 = "newzealandnorth"
 }
 Invoke-AzBootstrap @params
 ```
@@ -79,15 +76,12 @@ You can add or remove environments using:
 ```pwsh
 # Add a new environment (e.g., 'test')
 Add-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
-
-# Remove an environment (e.g., 'test')
-Remove-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn"
 ```
 
 Adding an environment will:
 
-- Create a new Azure resource group and managed identity for the environment (if they do not already exist)
-- Assign Contributor and RBAC Administrator roles to the managed identity at the resource group level
+- Create a new Azure resource group and managed identities for the environment (if they do not already exist)
+- Assign Reader for the plan identity and Contributor + RBAC Administrator roles to the apply managed identity at the resource group level
 - Set up federated credentials for GitHub OIDC trust for this environment
 - Create two GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") in the target repository
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
@@ -104,7 +98,8 @@ $params = @{
   TemplateRepoUrl                = "https://github.com/kewalaka/terraform-azure-starter-template"
   TargetRepoName                 = $name
   ResourceGroupName              = "rg-$name-$environment-nzn"
-  ManagedIdentityName            = "mi-$name-$environment-nzn"
+  PlanManagedIdentityName        = "mi-$name-$environment-nzn-plan"
+  ApplyManagedIdentityName       = "mi-$name-$environment-nzn-apply"
   Location                       = "newzealandnorth"
 
   # optional
@@ -172,7 +167,8 @@ Add-AzBootstrapEnvironment `
     -EnvironmentName "test" `
     -ResourceGroupName "rg-$name-$environment-nzn" `
     -Location "australiaeast" `
-    -ManagedIdentityName "mi-$name-$environment-nzn" `
+    -PlanManagedIdentityName "mi-$name-$environment-nzn-plan" `
+    -ApplyManagedIdentityName "mi-$name-$environment-nzn-apply" `
     -Owner "my-org-or-user" `
     -Repo "$name" `
     -PlanEnvName "$environment-iac-plan" `
@@ -180,16 +176,12 @@ Add-AzBootstrapEnvironment `
     -ArmTenantId $env:ARM_TENANT_ID `
     -ArmSubscriptionId $env:ARM_SUBSCRIPTION_ID `
     -ApplyEnvironmentUserReviewers @("reviewer1", "reviewer2")
-
-# Remove an environment (e.g., 'test')
-Remove-AzBootstrapEnvironment -EnvironmentName "$environment" -ResourceGroupName "rg-$name-$environment-nzn"
 ```
 
 The above demonstrates how to:
 
 - Bootstrap a new project with initial environments.
 - Add additional environments as needed.
-- Remove environments when they are no longer required.
 
 ## Next Steps
 
@@ -202,5 +194,4 @@ In no particular order, and without any commitments:
 - Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach.
 - Examples targeting Bicep (the general approach, as is, will work good with Bicep too!)
 - Support for Azure DevOps
-- Explore using the official Bicep vending as a mechanism to create the resources, to give more flexibility.
 - Use a ~/.az-bootstrap ini file to track preferences like a default template repo. (maybe even some 'repo aliases')
