@@ -95,6 +95,8 @@ function Add-AzBootstrapEnvironment {
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
 
   $secrets = @{
+    "ARM_TENANT_ID"       = $ArmTenantId
+    "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId    
     "ARM_CLIENT_ID" = $infraDetails.ApplyManagedIdentityClientId
   }  
 
