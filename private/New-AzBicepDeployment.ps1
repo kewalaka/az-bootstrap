@@ -44,7 +44,7 @@ function New-AzBicepDeployment {
   # Remove any parameters with $null values, as Bicep might error on `paramName=$null`
   $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$($_.Name)=$($_.Value)" }
 
-  Write-Verbose "[az-bootstrap] Bicep parameters for subscription deployment: $bicepParamsJson"
+  Write-Verbose "[az-bootstrap] Bicep parameters for subscription deployment: $activeBicepParams"
 
   $deploymentName = "AzBootstrap-EnvInfra-${EnvironmentName}-$(Get-Date -Format 'yyyyMMddHHmmssff')"
   
@@ -53,7 +53,7 @@ function New-AzBicepDeployment {
     "deployment", "sub", "create",
     "--name", $deploymentName,
     "--location", $Location, # Location for the deployment metadata
-    "--template-file", $resolvedBicepTemplateFile.Path,
+    "--template-file", "$($resolvedBicepTemplateFile.Path)",
     "--subscription", $ArmSubscriptionId,
     "--output", "json"
   )

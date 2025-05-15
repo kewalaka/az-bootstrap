@@ -16,7 +16,7 @@ You can use it to bootstrap demos, or as a lightweight alternative to subscripti
 ```mermaid
 flowchart TD
     A[Creates a new repository<br/> from a GitHub template] --> B[Clone the repository locally]
-    B --> C[Create resource group, <br/>managed identity & RBAC]
+    B --> C[Create resource group, <br/>managed identities & RBAC]
     C --> D[Makes GitHub Environments,<br/>set secrets, reviewers,<br/>and branch protection <br/>in the solution repo]
     D --> E[Now you're ready for<br/>IaC development!]
 ```
@@ -36,7 +36,7 @@ To get you started you need:
 ```powershell
 Install-Module Az-Bootstrap -Scope CurrentUser
 
-$params = {
+$params = @{
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
   TargetRepoName      = "my-new-demo"
   Location            = "newzealandnorth"
@@ -56,7 +56,7 @@ Naming conventions can be overriden to suit, for example, to include a location 
 
 ```powershell
 $name = "my-new-demo"
-$params = {
+$params = @{
   TemplateRepoUrl          = "https://github.com/kewalaka/terraform-azure-starter-template"
   TargetRepoName           = "$name"
   ResourceGroupName        = "rg-$name-dev-nzn-01"
