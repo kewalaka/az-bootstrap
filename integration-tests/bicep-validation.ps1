@@ -50,7 +50,7 @@ if ($whatif) {
 if ($deploy) {
     $stackName = "azb-stack-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
     $deploymentCmd = @(
-        'az stack sub create',
+        'stack sub create',
         "--name $stackName",
         "--location $($bicepParams.location)",
         "--template-file ../templates/environment-infra.bicep",
@@ -62,8 +62,14 @@ if ($deploy) {
     $deploymentCmd += $activeBicepParams
     $deploymentCmd = $deploymentCmd -join ' '
 
-    Write-Host "Running: $deploymentCmd"
-    Invoke-Expression $deploymentCmd
+    Write-Host "Running: az $deploymentCmd"
+
+    $stdoutfile = New-TemporaryFile
+    $stderrfile = New-TemporaryFile
+    $process = Start-Process "az" -ArgumentList $deploymentCmd -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stdoutfile -RedirectStandardError $stderrfile
+    $stdout = Get-Content $stdoutfile -Raw
+    $stderr = Get-Content $stderrfile -ErrorAction SilentlyContinue
+    Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
 
     Write-Host "\nTo delete the stack and all managed resources, run:"
     Write-Host "az stack sub delete --name $stackName --yes --action-on-unmanage deleteResources"
