@@ -95,12 +95,16 @@ function New-AzBicepDeployment {
     throw "Failed to retrieve Apply-Specific Managed Identity Client ID from Bicep deployment when CreateSeparateApplyMI was true for environment '$EnvironmentName'."
   }
 
-  $duration = $deploymentOutput.provisioningState
-  $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
-  $friendlyDuration = "{0}m {1}s" -f $ts.Minutes, $ts.Seconds
+  $duration = $deploymentOutput.duration
+  try {
+    $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
+    $friendlyDuration = "in {0}m {1}s." -f $ts.Minutes, $ts.Seconds
+  } catch {
+    $friendlyDuration = "."
+  }
   
   Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState) in $friendlyDuration."
+  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
 
