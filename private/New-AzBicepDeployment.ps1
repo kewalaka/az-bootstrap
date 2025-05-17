@@ -75,7 +75,7 @@ function New-AzBicepDeployment {
   }
 
   $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
-  if (-not $deploymentOutput -or -not $deploymentOutput.properties -or -not $deploymentOutput.properties.outputs) {
+  if (-not $deploymentOutput -or -not $deploymentOutput.outputs) {
     Write-Error "[az-bootstrap] Stack deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
     throw "Stack deployment for environment '$EnvironmentName' did not produce expected outputs."
   }
@@ -83,20 +83,24 @@ function New-AzBicepDeployment {
   $planManagedIdentityClientId = $null
   $applyManagedIdentityClientId = $null
 
-  $planManagedIdentityClientId = $deploymentOutput.properties.outputs.planManagedIdentityClientId.value
+  $planManagedIdentityClientId = $deploymentOutput.outputs.planManagedIdentityClientId.value
 
   if (-not $planManagedIdentityClientId) {
     throw "Failed to retrieve Primary Managed Identity Client ID from Bicep deployment for environment '$EnvironmentName'."
   }
 
-  $applyManagedIdentityClientId = $deploymentOutput.properties.outputs.applyManagedIdentityClientId.value
+  $applyManagedIdentityClientId = $deploymentOutput.outputs.applyManagedIdentityClientId.value
 
   if (-not $applyManagedIdentityClientId) {
     throw "Failed to retrieve Apply-Specific Managed Identity Client ID from Bicep deployment when CreateSeparateApplyMI was true for environment '$EnvironmentName'."
   }
+
+  $duration = $deploymentOutput.provisioningState
+  $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
+  $friendlyDuration = "{0}m {1}s" -f $ts.Minutes, $ts.Seconds
   
   Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' provisioning state: $($deploymentOutput.properties.provisioningState)."
+  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState) in $friendlyDuration."
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
 
