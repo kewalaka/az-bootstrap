@@ -21,6 +21,12 @@ param gitHubPlanEnvironmentName string
 @description('GitHub Environment name for the "apply" federated credential. Should be passed as lowercase.')
 param gitHubApplyEnvironmentName string
 
+@description('Name of the Storage Account to create. If not supplied, no storage account will be created.')
+param storageAccountName string = ''
+
+@description('Retention days for blob delete retention policy.')
+param retentionDays int = 7
+
 // @description('Set to true to create a separate Managed Identity specifically for the "apply" environment. If false, the primary MI will be used for both plan and apply.')
 // param createSeparateApplyMI bool = true
 
@@ -133,9 +139,80 @@ module applyMiRbacAdmin './rbac.bicep' = {
   }
 }
 
+module storageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = if (!empty(storageAccountName)) {
+  name: 'tfstorage-${uniqueString(storageAccountName)}'
+  scope: resourceGroup(resourceGroupName)
+  params: {
+    name: storageAccountName
+    location: location
+    skuName: 'Standard_LRS'
+    kind: 'StorageV2'
+    allowBlobPublicAccess: false
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowSharedKeyAccess: false
+    blobServices: {
+      versioning: {
+        enabled: true
+      }
+      deleteRetentionPolicy: {
+        enabled: true
+        days: retentionDays
+      }
+      automaticSnapshotPolicyEnabled: true
+      containerDeleteRetentionPolicy: {
+        enabled: true
+        days: 10
+      }
+      containers: [
+        {
+          name: 'tfstate'
+          publicAccess: 'None'
+          roleAssignments: [
+            {
+              principalId: planManagedIdentity.outputs.principalId
+              principalType: 'ServicePrincipal'
+              roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+            }
+            {
+              principalId: applyManagedIdentity.outputs.principalId
+              principalType: 'ServicePrincipal'
+              roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+            }
+          ]
+        }
+        {
+          name: 'tfartifact'
+          publicAccess: 'None'
+          roleAssignments: [
+            {
+              principalId: planManagedIdentity.outputs.principalId
+              principalType: 'ServicePrincipal'
+              roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+            }
+            {
+              principalId: applyManagedIdentity.outputs.principalId
+              principalType: 'ServicePrincipal'
+              roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+            }
+          ]
+        }
+      ]
+    }
+    tags: {
+      managedBy: 'az-bootstrap'
+      githubRepo: gitHubRepo
+      githubEnvironment: gitHubApplyEnvironmentName
+    }
+  }
+}
+
 // Outputs
 @description('Resource ID of the created Resource Group.')
 output resourceGroupId string = rg.outputs.resourceId
+
+@description('Name of the created Resource Group.')
+output resourceGroupName string = rg.outputs.name
 
 @description('Client ID of the Plan Managed Identity.')
 output planManagedIdentityClientId string = planManagedIdentity.outputs.clientId

@@ -40,8 +40,10 @@ function Invoke-AzBootstrap {
         # deployment reviewers
         [string[]]$ApplyEnvironmentUserReviewers,
         [string[]]$ApplyEnvironmentTeamReviewers,
-        [bool]$AddOwnerAsReviewer = $true
+        [bool]$AddOwnerAsReviewer = $true,
 
+        # optional storage account for terraform state
+        [string]$TerraformStateStorageAccountName = "",
     )
 
     #region: check parameters
@@ -159,20 +161,21 @@ function Invoke-AzBootstrap {
 
         Write-Host "[az-bootstrap] Creating initial environment '$InitialEnvironmentName'..."
         $addEnvParams = @{
-            EnvironmentName               = $InitialEnvironmentName
-            ResourceGroupName             = $initialRgName
-            Location                      = $Location
-            PlanManagedIdentityName       = $planMiName
-            ApplyManagedIdentityName      = $applyMiName
-            ArmTenantId                   = $currentArmTenantId
-            ArmSubscriptionId             = $currentArmSubscriptionId
-            GitHubOwner                   = $RepoInfo.Owner
-            GitHubRepo                    = $RepoInfo.Repo
-            PlanEnvName                   = $initialPlanEnvName
-            ApplyEnvName                  = $initialApplyEnvName
-            ApplyEnvironmentUserReviewers     = $ApplyEnvironmentUserReviewers
-            ApplyEnvironmentTeamReviewers = $ApplyEnvironmentTeamReviewers
-            AddOwnerAsReviewer            = $AddOwnerAsReviewer
+            EnvironmentName                  = $InitialEnvironmentName
+            ResourceGroupName                = $initialRgName
+            Location                         = $Location
+            PlanManagedIdentityName          = $planMiName
+            ApplyManagedIdentityName         = $applyMiName
+            ArmTenantId                      = $currentArmTenantId
+            ArmSubscriptionId                = $currentArmSubscriptionId
+            GitHubOwner                      = $RepoInfo.Owner
+            GitHubRepo                       = $RepoInfo.Repo
+            PlanEnvName                      = $initialPlanEnvName
+            ApplyEnvName                     = $initialApplyEnvName
+            ApplyEnvironmentUserReviewers    = $ApplyEnvironmentUserReviewers
+            ApplyEnvironmentTeamReviewers    = $ApplyEnvironmentTeamReviewers
+            AddOwnerAsReviewer               = $AddOwnerAsReviewer
+            TerraformStateStorageAccountName = $TerraformStateStorageAccountName
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams

@@ -20,7 +20,8 @@ function New-AzBicepDeployment {
     [Parameter(Mandatory)]
     [string]$ApplyEnvName,
     [Parameter(Mandatory)] # Subscription ID is required for subscription-level deployments
-    [string]$ArmSubscriptionId
+    [string]$ArmSubscriptionId,
+    [string]$TerraformStateStorageAccountName
   )
 
   $bicepTemplateFile = Join-Path $PSScriptRoot '..' 'templates' 'environment-infra.bicep'
@@ -33,35 +34,32 @@ function New-AzBicepDeployment {
 
   $bicepParams = @{
     resourceGroupName          = $ResourceGroupName
-    location                   = $Location # Bicep template uses this for RG and MI location
-    planManagedIdentityName    = $PlanManagedIdentityName # For the primary/plan MI
+    location                   = $Location
+    planManagedIdentityName    = $PlanManagedIdentityName
     applyManagedIdentityName   = $ApplyManagedIdentityName
     gitHubOwner                = $GitHubOwner.ToLower()
     gitHubRepo                 = $GitHubRepo.ToLower()
     gitHubPlanEnvironmentName  = $PlanEnvName.ToLower()
     gitHubApplyEnvironmentName = $ApplyEnvName.ToLower()
+    storageAccountName         = $TerraformStateStorageAccountName
   }
   # Remove any parameters with $null values, as Bicep might error on `paramName=$null`
-  $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$($_.Name)=$($_.Value)" }
+  $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$( $_.Name )=$( $_.Value )" }
 
-  Write-Verbose "[az-bootstrap] Bicep parameters for subscription deployment: $activeBicepParams"
-
-  $deploymentName = "AzBootstrap-EnvInfra-${EnvironmentName}-$(Get-Date -Format 'yyyyMMddHHmmssff')"
-  
-  # Using Start-Process for better stream handling with Azure CLI
+  $stackName = "azbootstrap-stack-$($EnvironmentName)-$(Get-Date -Format 'yyyyMMddHHmmss')"
   $azCliArgs = @(
-    "deployment", "sub", "create",
-    "--name", $deploymentName,
-    "--location", $Location, # Location for the deployment metadata
-    "--template-file", "$($resolvedBicepTemplateFile.Path)",
-    "--subscription", $ArmSubscriptionId,
-    "--output", "json"
+    'stack', 'sub', 'create',
+    '--name', $stackName,
+    '--location', $Location,
+    '--template-file', $resolvedBicepTemplateFile,
+    '--deployment-resource-group', $ResourceGroupName,
+    '--action-on-unmanage', 'deleteResources',
+    '--deny-settings-mode', 'none',
+    '--parameters'
   )
-  if ($activeBicepParams.Count -gt 0) {
-    $azCliArgs += "--parameters"
-    $azCliArgs += $activeBicepParams # Add each KEY=VALUE pair as a separate argument
-  }
+  $azCliArgs += $activeBicepParams
 
+  Write-Host "[az-bootstrap] Creating Azure infrastructure via deployment stack '$stackName'..."
   Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
   $stderrfile = New-TemporaryFile
@@ -71,16 +69,16 @@ function New-AzBicepDeployment {
   Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
 
   if ($process.ExitCode -ne 0) {
-    Write-Error "[az-bootstrap] Bicep subscription deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
+    Write-Error "[az-bootstrap] Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
     Write-Error "[az-bootstrap] Standard Error: $stderr"
     Write-Error "[az-bootstrap] Standard Output (may contain JSON error from Azure): $stdout"
-    throw "Bicep subscription deployment for environment '$EnvironmentName' failed."
+    throw "Stack deployment for environment '$EnvironmentName' failed."
   }
 
   $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
   if (-not $deploymentOutput -or -not $deploymentOutput.properties -or -not $deploymentOutput.properties.outputs) {
-    Write-Error "[az-bootstrap] Bicep deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
-    throw "Bicep deployment for environment '$EnvironmentName' did not produce expected outputs."
+    Write-Error "[az-bootstrap] Stack deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
+    throw "Stack deployment for environment '$EnvironmentName' did not produce expected outputs."
   }
 
   $planManagedIdentityClientId = $null
@@ -102,7 +100,7 @@ function New-AzBicepDeployment {
   Write-Host "Bicep deployment for '$EnvironmentName' provisioning state: $($deploymentOutput.properties.provisioningState)."
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
-  
+
   return [PSCustomObject]@{
     PlanManagedIdentityClientId  = $planManagedIdentityClientId
     ApplyManagedIdentityClientId = $applyManagedIdentityClientId

@@ -27,7 +27,9 @@ function Add-AzBootstrapEnvironment {
     [bool]$AddOwnerAsReviewer = $true,
 
     [string]$ArmTenantId,
-    [string]$ArmSubscriptionId
+    [string]$ArmSubscriptionId,
+
+    [string]$TerraformStateStorageAccountName
   )
 
   # Retrieve Azure context (Subscription ID and Tenant ID)
@@ -63,7 +65,6 @@ function Add-AzBootstrapEnvironment {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
   }
 
-  Write-Host "[az-bootstrap] Deploying Azure infrastructure for '$EnvironmentName' environment via Bicep..."
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
     -ResourceGroupName $ResourceGroupName `
     -Location $Location `
@@ -73,7 +74,8 @@ function Add-AzBootstrapEnvironment {
     -GitHubRepo $RepoInfo.Repo `
     -PlanEnvName $actualPlanEnvName `
     -ApplyEnvName $actualApplyEnvName `
-    -ArmSubscriptionId $ArmSubscriptionId
+    -ArmSubscriptionId $ArmSubscriptionId `
+    -StorageAccountName $TerraformStateStorageAccountName
 
   if (-not $infraDetails) {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
@@ -97,7 +99,7 @@ function Add-AzBootstrapEnvironment {
   $secrets = @{
     "ARM_TENANT_ID"       = $ArmTenantId
     "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId    
-    "ARM_CLIENT_ID" = $infraDetails.ApplyManagedIdentityClientId
+    "ARM_CLIENT_ID"       = $infraDetails.ApplyManagedIdentityClientId
   }  
 
   Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner `
