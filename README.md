@@ -16,7 +16,7 @@ You can use it to bootstrap demos, or as a lightweight alternative to subscripti
 ```mermaid
 flowchart TD
     A[Creates a new repository<br/> from a GitHub template] --> B[Clone the repository locally]
-    B --> C[Create resource group, <br/>managed identities & RBAC]
+    B --> C[Create resource group, <br/>managed identities & RBAC,<br/>optional TF storage account]
     C --> D[Makes GitHub Environments,<br/>set secrets, reviewers,<br/>and branch protection <br/>in the solution repo]
     D --> E[Now you're ready for<br/>IaC development!]
 ```
@@ -51,6 +51,7 @@ The above will:
 - Grants Reader to the plan identity and Contributor + RBAC Administrator (RBAC) roles to the apply managed identity at the resource group level
 - Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
 - Configures GitHub environments, secrets, and branch protection in the new target repository.
+- v0.4 - Creates an optional storage account for Terraform state, assigning both identities `Storage Blob Data Contributor`.
 
 Naming conventions can be overriden to suit, for example, to include a location in the RG and MI name, you could do this:
 
@@ -61,8 +62,10 @@ $params = @{
   TargetRepoName           = "$name"
   ResourceGroupName        = "rg-$name-dev-nzn-01"
   PlanManagedIdentityName  = "mi-$name-dev-nzn-01-plan"
-  ApplyManagedIdentityName = "mi-$name-dev-nzn-01-plan" 
+  ApplyManagedIdentityName = "mi-$name-dev-nzn-01-plan" \
   Location                 = "newzealandnorth"
+  # if you want to have a pre-made Terraform state file, complete with a bit of randomness for good luck:
+  TerraformStateStorageAccountName = "st{0}devnzn{1}" -f $name.replace("-",""), $([System.Guid]::NewGuid().ToString('N').Substring(0,4))
 }
 Invoke-AzBootstrap @params
 ```
@@ -112,6 +115,9 @@ $params = @{
   
   # Where to clone repo locally (default: ".\$TargetRepoName")
   TargetDirectory = "D:\src\kewalaka\demos\$name" 
+  
+  # Terraform State Storage account
+  TerraformStateStorageAccount = "strasndn23914"
   
   # "private" or "public" (default: "public")
   Visibility = "private"             
