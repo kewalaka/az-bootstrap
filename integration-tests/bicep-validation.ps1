@@ -1,3 +1,8 @@
+param (
+    [switch]$whatif,
+    [switch]$deploy
+)
+
 function Load-DotEnv {
     param(
         [string]$Path = ".env"
@@ -25,23 +30,41 @@ $bicepParams = Load-DotEnv -Path "$scriptpath/.env"
 # Validate required params and remove table header
 $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$($_.Name)=$($_.Value)" }
 
-# Example: Run Bicep deployment as a stack (recommended for lifecycle management)
-$stackName = "azb-stack-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
-$deploymentCmd = @(
-    'az stack sub create',
-    "--name $stackName",
-    "--location $($bicepParams.location)",
-    "--template-file ../templates/environment-infra.bicep",
-    "--action-on-unmanage deleteResources",
-    "--deny-settings-mode none",
-    "--parameters"
-)
+if ($whatif) {
+    # Example: Run Bicep deployment as a stack (recommended for lifecycle management)
+    $deployName = "azb-deploy-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+    $whatifCmd = @(
+        'az deployment sub create',
+        "--name $deployName",
+        "--location $($bicepParams.location)",
+        "--template-file ../templates/environment-infra.bicep",
+        "--what-if",
+        "--parameters"
+    )
+    $whatifCmd += $activeBicepParams
+    $whatifCmd = $whatifCmd -join ' '
+    Write-Host "Running: $whatifCmd"
+    Invoke-Expression $whatifCmd
+}
 
-$deploymentCmd += $activeBicepParams
-$deploymentCmd = $deploymentCmd -join ' '
+if ($deploy) {
+    $stackName = "azb-stack-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+    $deploymentCmd = @(
+        'az stack sub create',
+        "--name $stackName",
+        "--location $($bicepParams.location)",
+        "--template-file ../templates/environment-infra.bicep",
+        "--action-on-unmanage deleteResources",
+        "--deny-settings-mode none",
+        "--parameters"
+    )
 
-Write-Host "Running: $deploymentCmd"
-Invoke-Expression $deploymentCmd
+    $deploymentCmd += $activeBicepParams
+    $deploymentCmd = $deploymentCmd -join ' '
 
-Write-Host "\nTo delete the stack and all managed resources, run:"
-Write-Host "az stack sub delete --name $stackName --yes --action-on-unmanage deleteResources"
+    Write-Host "Running: $deploymentCmd"
+    Invoke-Expression $deploymentCmd
+
+    Write-Host "\nTo delete the stack and all managed resources, run:"
+    Write-Host "az stack sub delete --name $stackName --yes --action-on-unmanage deleteResources"
+}

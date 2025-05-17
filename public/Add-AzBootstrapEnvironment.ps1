@@ -81,13 +81,22 @@ function Add-AzBootstrapEnvironment {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
   }
 
-  Write-Host "[az-bootstrap] Configuring GitHub environment '$actualPlanEnvName'..."
-  New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
   $secrets = @{
     "ARM_TENANT_ID"       = $ArmTenantId
     "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId
-    "ARM_CLIENT_ID"       = $infraDetails.PlanManagedIdentityClientId
   }
+  if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+    $secrets += @{
+      "TFSTATE_RESOURCE_GROUP_NAME"  = $ResourceGroupName
+      "TFSTATE_STORAGE_ACCOUNT_NAME" = $TerraformStateStorageAccountName
+    }
+  }
+
+  Write-Host "[az-bootstrap] Configuring GitHub environment '$actualPlanEnvName'..."
+  New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
+
+  $secrets["ARM_CLIENT_ID"] = $infraDetails.PlanManagedIdentityClientId
+
   Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner `
     -Repo $RepoInfo.Repo `
     -EnvironmentName $actualPlanEnvName `
@@ -96,11 +105,7 @@ function Add-AzBootstrapEnvironment {
   Write-Host "[az-bootstrap] Configuring GitHub environment '$actualApplyEnvName'..."
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
 
-  $secrets = @{
-    "ARM_TENANT_ID"       = $ArmTenantId
-    "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId    
-    "ARM_CLIENT_ID"       = $infraDetails.ApplyManagedIdentityClientId
-  }  
+  $secrets["ARM_CLIENT_ID"] = $infraDetails.ApplyManagedIdentityClientId
 
   Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner `
     -Repo $RepoInfo.Repo `

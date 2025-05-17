@@ -52,7 +52,6 @@ function New-AzBicepDeployment {
     '--name', $stackName,
     '--location', $Location,
     '--template-file', $resolvedBicepTemplateFile,
-    '--deployment-resource-group', $ResourceGroupName,
     '--action-on-unmanage', 'deleteResources',
     '--deny-settings-mode', 'none',
     '--parameters'

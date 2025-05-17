@@ -220,6 +220,9 @@ output planManagedIdentityClientId string = planManagedIdentity.outputs.clientId
 @description('Client ID of the Plan Managed Identity.')
 output applyManagedIdentityClientId string = applyManagedIdentity.outputs.clientId
 
+@description('Resource ID of the Terraform State storage account.')
+output storageAccountId string = !empty(storageAccountName) ? storageAccount.outputs.resourceId : ''
+
 // @description('Resource ID of the Plan Managed Identity.')
 // output planManagedIdentityResourceId string = planManagedIdentity.outputs.resourceId
 
