@@ -188,7 +188,7 @@ function Invoke-AzBootstrap {
         Pop-Location
     }
 
-    Write-Host "[az-bootstrap] Repository  : '$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
+    Write-Host "[az-bootstrap] Repository  : 'https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
     Write-Host "[az-bootstrap] ...cloned to: '$($TargetDirectory)'."
     Write-Host "[az-bootstrap] Azure Bootstrap complete. 🎉"
 }
