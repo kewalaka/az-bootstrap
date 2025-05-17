@@ -89,7 +89,6 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
   - Key parameters include `PlanManagedIdentityName` (mandatory), `ApplyManagedIdentityName` (mandatory).
 - **Get-GitHubRepositoryInfo** (private): Gets repo info from explicit parameters, git, or Codespaces env.
 - **Invoke-GitHubCliCommand** (private): Runs a GitHub CLI command.
-- **New-AzEnvironmentInfrastructure** (private): Creates the Azure infrastructure for a specific environment.
 - **New-GitHubEnvironment**, **Set-GitHubEnvironmentSecrets**, **Set-GitHubEnvironmentPolicy**,
 - **New-GitHubBranchRuleset**: Atomic GitHub repo operations.
 
