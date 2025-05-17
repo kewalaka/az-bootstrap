@@ -74,7 +74,7 @@ function New-AzEnvironmentInfrastructure {
   }
 
   $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
-  if (-not $deploymentOutput -or -not $deploymentOutput.properties -or -not $deploymentOutput.properties.outputs) {
+  if (-not $deploymentOutput -or -not $deploymentOutput.outputs) {
       Write-Error "[az-bootstrap] Bicep deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
       throw "Bicep deployment for environment '$EnvironmentName' did not produce expected outputs."
   }
@@ -84,17 +84,17 @@ function New-AzEnvironmentInfrastructure {
   $applyManagedIdentityClientId = $null
   $applyManagedIdentityPrincipalId = $null
 
-  if ($deploymentOutput.properties.outputs.planManagedIdentityClientId) {
-    $planManagedIdentityClientId = $deploymentOutput.properties.outputs.planManagedIdentityClientId.value
+  if ($deploymentOutput.outputs.planManagedIdentityClientId) {
+    $planManagedIdentityClientId = $deploymentOutput.outputs.planManagedIdentityClientId.value
   }
-  if ($deploymentOutput.properties.outputs.planManagedIdentityPrincipalId) {
-    $planManagedIdentityPrincipalId = $deploymentOutput.properties.outputs.planManagedIdentityPrincipalId.value
+  if ($deploymentOutput.outputs.planManagedIdentityPrincipalId) {
+    $planManagedIdentityPrincipalId = $deploymentOutput.outputs.planManagedIdentityPrincipalId.value
   }
-  if ($deploymentOutput.properties.outputs.applyManagedIdentityClientId) {
-    $applyManagedIdentityClientId = $deploymentOutput.properties.outputs.applyManagedIdentityClientId.value
+  if ($deploymentOutput.outputs.applyManagedIdentityClientId) {
+    $applyManagedIdentityClientId = $deploymentOutput.outputs.applyManagedIdentityClientId.value
   }
-  if ($deploymentOutput.properties.outputs.applyManagedIdentityPrincipalId) {
-    $applyManagedIdentityPrincipalId = $deploymentOutput.properties.outputs.applyManagedIdentityPrincipalId.value
+  if ($deploymentOutput.outputs.applyManagedIdentityPrincipalId) {
+    $applyManagedIdentityPrincipalId = $deploymentOutput.outputs.applyManagedIdentityPrincipalId.value
   }
 
   if (-not $planManagedIdentityClientId -or -not $planManagedIdentityPrincipalId) {
@@ -109,10 +109,10 @@ function New-AzEnvironmentInfrastructure {
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
   
   return [PSCustomObject]@{
-    PlanManagedIdentityClientId    = $planManagedIdentityClientId
-    PlanManagedIdentityPrincipalId = $planManagedIdentityPrincipalId
-    ApplyManagedIdentityClientId      = $applyManagedIdentityClientId 
-    ApplyManagedIdentityPrincipalId   = $applyManagedIdentityPrincipalId 
+    PlanManagedIdentityClientId     = $planManagedIdentityClientId
+    PlanManagedIdentityPrincipalId  = $planManagedIdentityPrincipalId
+    ApplyManagedIdentityClientId    = $applyManagedIdentityClientId 
+    ApplyManagedIdentityPrincipalId = $applyManagedIdentityPrincipalId 
   }
 }
 
