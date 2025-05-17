@@ -43,7 +43,7 @@ function Invoke-AzBootstrap {
         [bool]$AddOwnerAsReviewer = $true,
 
         # optional storage account for terraform state
-        [string]$TerraformStateStorageAccountName = "",
+        [string]$TerraformStateStorageAccountName = ""
     )
 
     #region: check parameters
