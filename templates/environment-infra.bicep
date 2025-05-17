@@ -22,7 +22,7 @@ param gitHubPlanEnvironmentName string
 param gitHubApplyEnvironmentName string
 
 @description('Name of the Storage Account to create. If not supplied, no storage account will be created.')
-param storageAccountName string = ''
+param terraformStateStorageAccountName string = ''
 
 @description('Retention days for blob delete retention policy.')
 param retentionDays int = 7
@@ -139,11 +139,11 @@ module applyMiRbacAdmin './rbac.bicep' = {
   }
 }
 
-module storageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = if (!empty(storageAccountName)) {
-  name: 'tfstorage-${uniqueString(storageAccountName)}'
+module storageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = if (!empty(terraformStateStorageAccountName)) {
+  name: 'tfstorage-${uniqueString(terraformStateStorageAccountName)}'
   scope: resourceGroup(resourceGroupName)
   params: {
-    name: storageAccountName
+    name: terraformStateStorageAccountName
     location: location
     skuName: 'Standard_LRS'
     kind: 'StorageV2'
@@ -221,7 +221,7 @@ output planManagedIdentityClientId string = planManagedIdentity.outputs.clientId
 output applyManagedIdentityClientId string = applyManagedIdentity.outputs.clientId
 
 @description('Resource ID of the Terraform State storage account.')
-output storageAccountId string = !empty(storageAccountName) ? storageAccount.outputs.resourceId : ''
+output terraformStateStorageAccountId string = !empty(terraformStateStorageAccountName) ? storageAccount.outputs.resourceId : ''
 
 // @description('Resource ID of the Plan Managed Identity.')
 // output planManagedIdentityResourceId string = planManagedIdentity.outputs.resourceId

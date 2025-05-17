@@ -33,15 +33,15 @@ function New-AzBicepDeployment {
   Write-Host "[az-bootstrap] This may take a few minutes, please wait..."
 
   $bicepParams = @{
-    resourceGroupName          = $ResourceGroupName
-    location                   = $Location
-    planManagedIdentityName    = $PlanManagedIdentityName
-    applyManagedIdentityName   = $ApplyManagedIdentityName
-    gitHubOwner                = $GitHubOwner.ToLower()
-    gitHubRepo                 = $GitHubRepo.ToLower()
-    gitHubPlanEnvironmentName  = $PlanEnvName.ToLower()
-    gitHubApplyEnvironmentName = $ApplyEnvName.ToLower()
-    storageAccountName         = $TerraformStateStorageAccountName
+    resourceGroupName                = $ResourceGroupName
+    location                         = $Location
+    planManagedIdentityName          = $PlanManagedIdentityName
+    applyManagedIdentityName         = $ApplyManagedIdentityName
+    gitHubOwner                      = $GitHubOwner.ToLower()
+    gitHubRepo                       = $GitHubRepo.ToLower()
+    gitHubPlanEnvironmentName        = $PlanEnvName.ToLower()
+    gitHubApplyEnvironmentName       = $ApplyEnvName.ToLower()
+    terraformStateStorageAccountName = $TerraformStateStorageAccountName
   }
   # Remove any parameters with $null values, as Bicep might error on `paramName=$null`
   $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$( $_.Name )=$( $_.Value )" }

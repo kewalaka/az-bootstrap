@@ -75,7 +75,7 @@ function Add-AzBootstrapEnvironment {
     -PlanEnvName $actualPlanEnvName `
     -ApplyEnvName $actualApplyEnvName `
     -ArmSubscriptionId $ArmSubscriptionId `
-    -StorageAccountName $TerraformStateStorageAccountName
+    -TerraformStateStorageAccountName $TerraformStateStorageAccountName
 
   if (-not $infraDetails) {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
