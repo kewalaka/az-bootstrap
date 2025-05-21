@@ -179,6 +179,8 @@ function Invoke-AzBootstrap {
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams
+
+        # The configuration file is created by Add-AzBootstrapEnvironment if it can determine the repository path
     }
     catch {
         Write-Error "Failed to add initial environment '$InitialEnvironmentName': $_"
