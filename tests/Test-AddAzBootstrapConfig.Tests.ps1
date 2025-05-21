@@ -23,13 +23,9 @@ Describe "Add-AzBootstrapConfig" {
             $environmentConfig = [PSCustomObject]@{
                 EnvironmentName = $environmentName
                 ResourceGroupName = "rg-test"
-                Location = "eastus"
-                PlanManagedIdentityName = "mi-test-plan"
-                ApplyManagedIdentityName = "mi-test-apply"
+                DeploymentStackName = "azbootstrap-stack-test-20250521123456"
                 PlanGitHubEnvironmentName = "test-env-iac-plan"
                 ApplyGitHubEnvironmentName = "test-env-iac-apply"
-                PlanManagedIdentityClientId = "plan-client-id"
-                ApplyManagedIdentityClientId = "apply-client-id"
                 TerraformStateStorageAccountName = "testterraformstate"
             }
 
@@ -61,7 +57,7 @@ Describe "Add-AzBootstrapConfig" {
             $initialConfig = [PSCustomObject]@{
                 EnvironmentName = $environmentName
                 ResourceGroupName = "rg-initial"
-                Location = "westus"
+                DeploymentStackName = "azbootstrap-stack-dev-20250521123456"
             }
             
             # Add initial config
@@ -71,7 +67,7 @@ Describe "Add-AzBootstrapConfig" {
             $updatedConfig = [PSCustomObject]@{
                 EnvironmentName = $environmentName
                 ResourceGroupName = "rg-updated"
-                Location = "eastus"
+                DeploymentStackName = "azbootstrap-stack-dev-20250521234567"
             }
             
             # Act
@@ -83,7 +79,7 @@ Describe "Add-AzBootstrapConfig" {
             # Verify content was updated
             $content = Get-Content -Path $configPath -Raw | ConvertFrom-Json
             $content.environments.$environmentName.ResourceGroupName | Should -Be "rg-updated"
-            $content.environments.$environmentName.Location | Should -Be "eastus"
+            $content.environments.$environmentName.DeploymentStackName | Should -Be "azbootstrap-stack-dev-20250521234567"
         }
         
         It "Should add a new environment to an existing config file" {

@@ -128,13 +128,9 @@ function Add-AzBootstrapEnvironment {
   $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
     ResourceGroupName            = $ResourceGroupName
-    Location                     = $Location
-    PlanManagedIdentityName      = $PlanManagedIdentityName
-    ApplyManagedIdentityName     = $ApplyManagedIdentityName
+    DeploymentStackName          = $infraDetails.DeploymentStackName
     PlanGitHubEnvironmentName    = $actualPlanEnvName
     ApplyGitHubEnvironmentName   = $actualApplyEnvName
-    PlanManagedIdentityClientId  = $infraDetails.PlanManagedIdentityClientId
-    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId
     TerraformStateStorageAccountName = $TerraformStateStorageAccountName
   }
 
