@@ -104,6 +104,16 @@ Invoke-Pester -Path ./tests/Test-AddEnvironment.Tests.ps1
 Invoke-Pester -Path ./tests/Test-RemoveEnvironment.Tests.ps1
 ```
 
+## Release Process
+
+When creating a new release:
+
+1. Update the `ModuleVersion` in `az-bootstrap.psd1` to a higher version than the current one in the PowerShell Gallery.
+2. Create a GitHub release, which will trigger the publish workflow.
+3. The workflow will automatically check if the version number is higher than the previously published version.
+4. If the version number is not higher, the workflow will fail with an error message.
+5. If the version check passes, the module will be uploaded to the PowerShell Gallery.
+
 ---
 
 For usage instructions, see [README.md](./README.md).
