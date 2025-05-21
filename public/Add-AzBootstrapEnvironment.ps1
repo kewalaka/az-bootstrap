@@ -65,6 +65,12 @@ function Add-AzBootstrapEnvironment {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
   }
 
+  # Check if the resource group already exists
+  Write-Host "[az-bootstrap] Checking if Azure resource group '$ResourceGroupName' already exists..."
+  if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
+    throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
+  }
+
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
     -ResourceGroupName $ResourceGroupName `
     -Location $Location `

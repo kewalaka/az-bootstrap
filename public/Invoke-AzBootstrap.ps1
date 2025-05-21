@@ -94,17 +94,25 @@ function Invoke-AzBootstrap {
         "internal" { "--internal" }
         Default { "--public" }
     }
+    
+    # Determine the actual owner if not provided
+    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
+        # Try to get the current user/org from gh CLI
+        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
+        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
+    }
+    
+    # Check if the GitHub repository already exists
+    Write-Host "[az-bootstrap] Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
+    if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $TargetRepoName) {
+        throw "GitHub repository '$actualOwner/$TargetRepoName' already exists. Please choose a different name."
+    }
+    
     Write-Host "[az-bootstrap] Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
     $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
     Invoke-Expression $cmd
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create new GitHub repository from template."
-    }
-
-    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
-        # Try to get the current user/org from gh CLI
-        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
-        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
     }
 
     $repoUrl = "https://github.com/$actualOwner/$TargetRepoName.git"
@@ -140,6 +148,12 @@ function Invoke-AzBootstrap {
         }
         else {
             "rg-$($RepoInfo.Repo)-$InitialEnvironmentName"
+        }
+        
+        # Check if the resource group already exists
+        Write-Host "[az-bootstrap] Checking if Azure resource group '$initialRgName' already exists..."
+        if (Test-AzResourceGroupExists -ResourceGroupName $initialRgName) {
+            throw "Azure resource group '$initialRgName' already exists. Please choose a different name."
         }
         
         $planMiName = if (-not [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
