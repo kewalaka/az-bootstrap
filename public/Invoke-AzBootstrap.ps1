@@ -102,7 +102,7 @@ function Invoke-AzBootstrap {
         if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
     }
     
-    # Calculate the initial resource group name early
+    # Use the provided resource group name or construct it
     $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
         $ResourceGroupName
     }
