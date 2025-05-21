@@ -102,6 +102,20 @@ function Invoke-AzBootstrap {
         if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
     }
     
+    # Calculate the initial resource group name early
+    $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
+        $ResourceGroupName
+    }
+    else {
+        "rg-$TargetRepoName-$InitialEnvironmentName"
+    }
+    
+    # Check if the resource group already exists
+    Write-Host "[az-bootstrap] Checking if Azure resource group '$initialRgName' already exists..."
+    if (Test-AzResourceGroupExists -ResourceGroupName $initialRgName) {
+        throw "Azure resource group '$initialRgName' already exists. Please choose a different name."
+    }
+    
     # Check if the GitHub repository already exists
     Write-Host "[az-bootstrap] Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
     if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $TargetRepoName) {
@@ -142,20 +156,7 @@ function Invoke-AzBootstrap {
             -AllowedMergeMethods $BranchAllowedMergeMethods `
             -EnableCopilotReview $BranchEnableCopilotReview
 
-        # Construct names for the initial environment
-        $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
-            $ResourceGroupName
-        }
-        else {
-            "rg-$($RepoInfo.Repo)-$InitialEnvironmentName"
-        }
-        
-        # Check if the resource group already exists
-        Write-Host "[az-bootstrap] Checking if Azure resource group '$initialRgName' already exists..."
-        if (Test-AzResourceGroupExists -ResourceGroupName $initialRgName) {
-            throw "Azure resource group '$initialRgName' already exists. Please choose a different name."
-        }
-        
+        # Construct names for the managed identities
         $planMiName = if (-not [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
             $PlanManagedIdentityName
         }
