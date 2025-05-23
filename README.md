@@ -38,6 +38,8 @@ Install-Module Az-Bootstrap -Scope CurrentUser
 
 $params = @{
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
+  # Or use GitHub shorthand: "kewalaka/terraform-azure-starter-template"
+  # Or use an alias (if configured): "terraform"
   TargetRepoName      = "my-new-demo"
   Location            = "newzealandnorth"
 }
@@ -189,6 +191,50 @@ The above demonstrates how to:
 - Bootstrap a new project with initial environments.
 - Add additional environments as needed.
 
+## Global Settings File
+
+You can optionally create a global settings file at `~/.az-bootstrap.jsonc` to store template repository aliases and other preferences. This allows you to use short aliases instead of full repository URLs.
+
+### Example Configuration
+
+Create a file at `~/.az-bootstrap.jsonc` with the following content:
+
+```jsonc
+{
+    // Template repository aliases for commonly used templates
+    "templateAliases": {
+        "terraform": "https://github.com/kewalaka/terraform-azure-starter-template",
+        "bicep": "https://github.com/kewalaka/bicep-azure-starter-template",
+        "my-org-template": "https://github.com/my-org/starter-template"
+    }
+}
+```
+
+### Using Template Aliases
+
+Once configured, you can use the aliases in place of full URLs:
+
+```powershell
+# Using an alias instead of the full URL
+$params = @{
+  TemplateRepoUrl     = "terraform"  # Resolves to the URL defined in the config
+  TargetRepoName      = "my-new-demo"
+  Location            = "newzealandnorth"
+}
+Invoke-AzBootstrap @params
+```
+
+### Template URL Resolution
+
+The module resolves template repository URLs in the following order:
+
+1. **Full URLs** - If you provide a full `https://` URL, it's used as-is
+2. **Configured aliases** - If the value matches an alias in your global config, it's resolved to the configured URL
+3. **GitHub shorthand** - If the value matches the pattern `owner/repo`, it's expanded to `https://github.com/owner/repo`
+4. **As-is** - If none of the above match, the value is passed through unchanged
+
+The global settings file is completely optional - the module works without it using full URLs or GitHub shorthand notation.
+
 ## Next Steps
 
 - See [DESIGN.md](./DESIGN.md) for more details on architecture and extensibility.
@@ -200,4 +246,4 @@ In no particular order, and without any commitments:
 - Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach.
 - Examples targeting Bicep (the general approach, as is, will work good with Bicep too!)
 - Support for Azure DevOps
-- Use a ~/.az-bootstrap ini file to track preferences like a default template repo. (maybe even some 'repo aliases')
+- ✅ Global settings file (~/.az-bootstrap.jsonc) with template repository aliases
