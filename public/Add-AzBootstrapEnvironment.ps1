@@ -139,14 +139,25 @@ function Add-AzBootstrapEnvironment {
   Write-Host "[az-bootstrap] GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
 
   
-  return [PSCustomObject]@{
+  $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
     ResourceGroupName            = $ResourceGroupName
+    DeploymentStackName          = $infraDetails.DeploymentStackName
     PlanGitHubEnvironmentName    = $actualPlanEnvName
     ApplyGitHubEnvironmentName   = $actualApplyEnvName
-    PlanManagedIdentityClientId  = $infraDetails.PlanManagedIdentityClientId
-    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId 
+    TerraformStateStorageAccountName = $TerraformStateStorageAccountName
   }
+
+  # Save configuration to .azbootstrap.jsonc if we can determine the repository path
+  $repoPath = git rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -eq 0 -and $repoPath) {
+    $configPath = Join-Path $repoPath ".azbootstrap.jsonc"
+    Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
+  } else {
+    Write-Warning "Could not determine repository root path. Skipping writing configuration file."
+  }
+
+  return $environmentConfig
 }
 
 Export-ModuleMember -Function Add-AzBootstrapEnvironment
