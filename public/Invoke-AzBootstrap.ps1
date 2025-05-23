@@ -45,9 +45,21 @@ function Invoke-AzBootstrap {
         # optional storage account for terraform state
         [string]$TerraformStateStorageAccountName = ""
     )
+    
+    # Attempt to resolve template URL (handles aliases and GitHub shorthand)
+    $TemplateRepoUrl = Resolve-TemplateRepoUrl -TemplateRepoUrl $TemplateRepoUrl
+    
+    # If location is not provided, try to get it from the config
+    if (-not $Location -or [string]::IsNullOrWhiteSpace($Location)) {
+        $config = Get-AzBootstrapConfig
+        if ($config.ContainsKey('defaultLocation') -and -not [string]::IsNullOrWhiteSpace($config.defaultLocation)) {
+            $Location = $config.defaultLocation
+            Write-Verbose "Using default location '$Location' from config file."
+        }
+    }
 
     #region: check parameters
-    # Check if we're in interactive mode (no required parameters provided)
+    # Check if we're in interactive mode (not all required parameters have been provided)
     $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
                           [string]::IsNullOrWhiteSpace($TargetRepoName) -or 
                           [string]::IsNullOrWhiteSpace($Location)

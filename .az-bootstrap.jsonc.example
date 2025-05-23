@@ -1,0 +1,18 @@
+{
+    // Example global configuration file for az-bootstrap
+    // Place this file at ~/.az-bootstrap.jsonc to use template aliases
+    
+    "templateAliases": {
+        // Common template repositories
+        "terraform": "https://github.com/kewalaka/terraform-azure-starter-template",
+        "bicep": "https://github.com/kewalaka/bicep-azure-starter-template",
+        
+        // You can add your own organization's templates
+        "my-terraform": "https://github.com/my-org/my-terraform-template",
+        "my-bicep": "https://github.com/my-org/my-bicep-template"
+    }
+    
+    // Future settings can be added here, for example:
+    "defaultLocation": "eastus",
+    // "defaultOwner": "my-org"
+}
