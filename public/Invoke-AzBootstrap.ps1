@@ -50,6 +50,9 @@ function Invoke-AzBootstrap {
     if (-not $TemplateRepoUrl -or [string]::IsNullOrWhiteSpace($TemplateRepoUrl)) {
         throw "Template repository URL is required."
     }
+    
+    # Resolve template URL (handles aliases and GitHub shorthand)
+    $TemplateRepoUrl = Resolve-TemplateRepoUrl -TemplateRepoUrl $TemplateRepoUrl
     if (-not $TargetRepoName -or [string]::IsNullOrWhiteSpace($TargetRepoName)) {
         throw "Target repository name is required."
     }
