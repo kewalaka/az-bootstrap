@@ -1,9 +1,15 @@
 function Resolve-TemplateRepoUrl {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$TemplateRepoUrl
     )
+    
+    # If the template URL is null or empty, return as-is (will be handled by interactive mode)
+    if (-not $TemplateRepoUrl -or [string]::IsNullOrWhiteSpace($TemplateRepoUrl)) {
+        Write-Verbose "Template repo URL is empty, returning as-is for interactive mode handling"
+        return $TemplateRepoUrl
+    }
     
     # If it's already a full URL, return as-is
     if ($TemplateRepoUrl -match '^https?://') {

@@ -74,4 +74,18 @@ Describe "Global Config Functionality via Invoke-AzBootstrap" {
                 $_.Exception.Message | Should -Match "GitHub CLI"
             }
         }
+
+        It "Handles empty template URL gracefully and enters interactive mode" {
+            try {
+                # Test with empty template URL - should enter interactive mode
+                $output = Invoke-AzBootstrap -TargetRepoName "test" -Location "eastus" -Verbose 2>&1
+                $emptyUrlMessage = $output | Where-Object { $_ -match "Template repo URL is empty, returning as-is for interactive mode handling" }
+                $interactiveMessage = $output | Where-Object { $_ -match "No required parameters provided, entering interactive mode" }
+                $emptyUrlMessage | Should -Not -BeNullOrEmpty
+                $interactiveMessage | Should -Not -BeNullOrEmpty
+            } catch {
+                # This test will timeout in interactive mode, but we should see the verbose messages first
+                $_.Exception.Message | Should -Match "interactive mode"
+            }
+        }
     }
