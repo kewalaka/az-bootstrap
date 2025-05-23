@@ -2,13 +2,13 @@ function Invoke-AzBootstrap {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
         #
-        # required parameters
+        # parameters that were previously required, but now optional to support interactive mode
         #
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$TemplateRepoUrl,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$TargetRepoName,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$Location, 
 
         #
@@ -47,6 +47,41 @@ function Invoke-AzBootstrap {
     )
 
     #region: check parameters
+    # Check if we're in interactive mode (no required parameters provided)
+    $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
+                          [string]::IsNullOrWhiteSpace($TargetRepoName) -or 
+                          [string]::IsNullOrWhiteSpace($Location)
+    
+    if ($isInteractiveMode) {
+        Write-Verbose "[az-bootstrap] No required parameters provided, entering interactive mode."
+        $interactiveParams = Start-AzBootstrapInteractiveMode
+        
+        if ($null -eq $interactiveParams) {
+            # User cancelled in interactive mode
+            return
+        }
+        
+        # Apply interactive params to our current parameters
+        $TemplateRepoUrl = $interactiveParams.TemplateRepoUrl
+        $TargetRepoName = $interactiveParams.TargetRepoName
+        $Location = $interactiveParams.Location
+        
+        # Only override these if they weren't specified in the command line
+        if ([string]::IsNullOrWhiteSpace($ResourceGroupName)) {
+            $ResourceGroupName = $interactiveParams.ResourceGroupName
+        }
+        if ([string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
+            $PlanManagedIdentityName = $interactiveParams.PlanManagedIdentityName
+        }
+        if ([string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
+            $ApplyManagedIdentityName = $interactiveParams.ApplyManagedIdentityName
+        }
+        if ([string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+            $TerraformStateStorageAccountName = $interactiveParams.TerraformStateStorageAccountName
+        }
+    }
+    
+    # Validate required parameters are now present
     if (-not $TemplateRepoUrl -or [string]::IsNullOrWhiteSpace($TemplateRepoUrl)) {
         throw "Template repository URL is required."
     }
