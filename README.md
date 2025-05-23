@@ -31,6 +31,25 @@ To get you started you need:
 
 ## Usage Examples
 
+### Interactive Mode
+
+For guided setup with sensible defaults, simply run without any parameters:
+
+```pwsh
+Invoke-AzBootstrap
+```
+
+This will prompt you for required information with default values provided:
+- Template Repository URL (required)
+- Target Repository Name (required)
+- Azure Location (default: australiaeast)
+- Resource Group Name (default: azb-rg)
+- Plan Managed Identity Name (default: azb-mi-plan)
+- Apply Managed Identity Name (default: azb-mi-apply)
+- Terraform State Storage Account Name (default: azbstorage)
+
+After entering all inputs, you'll see a configuration summary and be prompted to confirm before proceeding.
+
 ### Minimal example
 
 ```powershell
