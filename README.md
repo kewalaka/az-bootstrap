@@ -31,6 +31,25 @@ To get you started you need:
 
 ## Usage Examples
 
+### Interactive Mode
+
+For guided setup with sensible defaults, simply run without any parameters:
+
+```pwsh
+Invoke-AzBootstrap
+```
+
+This will prompt you for required information with default values provided:
+- Template Repository URL (required)
+- Target Repository Name (required)
+- Azure Location (default: australiaeast)
+- Resource Group Name (default: azb-rg)
+- Plan Managed Identity Name (default: azb-mi-plan)
+- Apply Managed Identity Name (default: azb-mi-apply)
+- Terraform State Storage Account Name (default: azbstorage)
+
+After entering all inputs, you'll see a configuration summary and be prompted to confirm before proceeding.
+
 ### Minimal example
 
 ```powershell
@@ -53,6 +72,7 @@ The above will:
 - Grants Reader to the plan identity and Contributor + RBAC Administrator (RBAC) roles to the apply managed identity at the resource group level
 - Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
 - Configures GitHub environments, secrets, and branch protection in the new target repository.
+- Creates a `.azbootstrap.jsonc` file in the target repository to track created resources
 - v0.4 - Creates an optional storage account for Terraform state, assigning both identities `Storage Blob Data Contributor`.
 
 Naming conventions can be overriden to suit, for example, to include a location in the RG and MI name, you could do this:
@@ -91,6 +111,7 @@ Adding an environment will:
 - Create two GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") in the target repository
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
 - Optionally configure deployment reviewers and branch protection for the environment
+- Update the `.azbootstrap.jsonc` file with details about the new environment
 
 ### Complete Example
 
