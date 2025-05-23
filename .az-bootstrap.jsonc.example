@@ -13,6 +13,6 @@
     }
     
     // Future settings can be added here, for example:
-    // "defaultLocation": "newzealandnorth",
+    "defaultLocation": "eastus",
     // "defaultOwner": "my-org"
 }

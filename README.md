@@ -206,7 +206,10 @@ Create a file at `~/.az-bootstrap.jsonc` with the following content:
         "terraform": "https://github.com/kewalaka/terraform-azure-starter-template",
         "bicep": "https://github.com/kewalaka/bicep-azure-starter-template",
         "my-org-template": "https://github.com/my-org/starter-template"
-    }
+    },
+    
+    // Default Azure location to use when not specified
+    "defaultLocation": "eastus"
 }
 ```
 
@@ -219,7 +222,7 @@ Once configured, you can use the aliases in place of full URLs:
 $params = @{
   TemplateRepoUrl     = "terraform"  # Resolves to the URL defined in the config
   TargetRepoName      = "my-new-demo"
-  Location            = "newzealandnorth"
+  # Location can be omitted if defaultLocation is set in the config file
 }
 Invoke-AzBootstrap @params
 ```

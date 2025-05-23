@@ -8,7 +8,7 @@ function Invoke-AzBootstrap {
         [string]$TemplateRepoUrl,
         [Parameter(Mandatory = $true)]
         [string]$TargetRepoName,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [string]$Location, 
 
         #
@@ -56,8 +56,17 @@ function Invoke-AzBootstrap {
     if (-not $TargetRepoName -or [string]::IsNullOrWhiteSpace($TargetRepoName)) {
         throw "Target repository name is required."
     }
+    
+    # If location is not provided, try to get it from the config
     if (-not $Location -or [string]::IsNullOrWhiteSpace($Location)) {
-        throw "Location is required."
+        $config = Get-AzBootstrapConfig
+        if ($config.ContainsKey('defaultLocation') -and -not [string]::IsNullOrWhiteSpace($config.defaultLocation)) {
+            $Location = $config.defaultLocation
+            Write-Verbose "Using default location '$Location' from config file."
+        }
+        else {
+            throw "Location is required. Either provide the -Location parameter or set 'defaultLocation' in your ~/.az-bootstrap.jsonc file."
+        }
     }
     #endregion
 
