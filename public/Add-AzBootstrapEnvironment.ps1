@@ -40,6 +40,14 @@ function Add-AzBootstrapEnvironment {
     $ArmTenantId = $azContext.TenantId
   }
 
+  # Check storage account name if provided
+  if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+    $storageAccountValidation = Test-AzStorageAccountNameAvailability -StorageAccountName $TerraformStateStorageAccountName
+    if (-not $storageAccountValidation.IsValid) {
+      throw "Storage account validation failed: $($storageAccountValidation.Reason)"
+    }
+  }
+
   $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $GitHubOwner -OverrideRepo $GitHubRepo
   if (-not $RepoInfo) {
     throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide -Owner and -Repo parameters."
@@ -63,6 +71,12 @@ function Add-AzBootstrapEnvironment {
   }
   else {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
+  }
+
+  # Check if the resource group already exists
+  Write-Host "[az-bootstrap] Checking if Azure resource group '$ResourceGroupName' already exists..."
+  if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
+    throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
   }
 
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
@@ -125,14 +139,25 @@ function Add-AzBootstrapEnvironment {
   Write-Host "[az-bootstrap] GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
 
   
-  return [PSCustomObject]@{
+  $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
     ResourceGroupName            = $ResourceGroupName
+    DeploymentStackName          = $infraDetails.DeploymentStackName
     PlanGitHubEnvironmentName    = $actualPlanEnvName
     ApplyGitHubEnvironmentName   = $actualApplyEnvName
-    PlanManagedIdentityClientId  = $infraDetails.PlanManagedIdentityClientId
-    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId 
+    TerraformStateStorageAccountName = $TerraformStateStorageAccountName
   }
+
+  # Save configuration to .azbootstrap.jsonc if we can determine the repository path
+  $repoPath = git rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -eq 0 -and $repoPath) {
+    $configPath = Join-Path $repoPath ".azbootstrap.jsonc"
+    Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
+  } else {
+    Write-Warning "Could not determine repository root path. Skipping writing configuration file."
+  }
+
+  return $environmentConfig
 }
 
 Export-ModuleMember -Function Add-AzBootstrapEnvironment

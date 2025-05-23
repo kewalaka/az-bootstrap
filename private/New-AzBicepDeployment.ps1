@@ -111,6 +111,7 @@ function New-AzBicepDeployment {
   return [PSCustomObject]@{
     PlanManagedIdentityClientId  = $planManagedIdentityClientId
     ApplyManagedIdentityClientId = $applyManagedIdentityClientId
+    DeploymentStackName          = $stackName
   }
 }
 

@@ -70,6 +70,7 @@ The above will:
 - Grants Reader to the plan identity and Contributor + RBAC Administrator (RBAC) roles to the apply managed identity at the resource group level
 - Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
 - Configures GitHub environments, secrets, and branch protection in the new target repository.
+- Creates a `.azbootstrap.jsonc` file in the target repository to track created resources
 - v0.4 - Creates an optional storage account for Terraform state, assigning both identities `Storage Blob Data Contributor`.
 
 Naming conventions can be overriden to suit, for example, to include a location in the RG and MI name, you could do this:
@@ -108,6 +109,7 @@ Adding an environment will:
 - Create two GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") in the target repository
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
 - Optionally configure deployment reviewers and branch protection for the environment
+- Update the `.azbootstrap.jsonc` file with details about the new environment
 
 ### Complete Example
 

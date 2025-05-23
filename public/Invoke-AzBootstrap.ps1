@@ -93,6 +93,15 @@ function Invoke-AzBootstrap {
     }
     #endregion
 
+    # Check storage account name if provided
+    if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+        $storageAccountValidation = Test-AzStorageAccountNameAvailability -StorageAccountName $TerraformStateStorageAccountName
+        if (-not $storageAccountValidation.IsValid) {
+            throw "Storage account validation failed: $($storageAccountValidation.Reason)"
+        }
+    }
+    #endregion
+
     #region: check target directory
     if (-not $TargetDirectory -or [string]::IsNullOrWhiteSpace($TargetDirectory)) {
         $TargetDirectory = Join-Path -Path (Get-Location) -ChildPath $TargetRepoName
@@ -129,17 +138,39 @@ function Invoke-AzBootstrap {
         "internal" { "--internal" }
         Default { "--public" }
     }
+    
+    # Determine the actual owner if not provided
+    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
+        # Try to get the current user/org from gh CLI
+        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
+        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
+    }
+    
+    # Use the provided resource group name or construct it
+    $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
+        $ResourceGroupName
+    }
+    else {
+        "rg-$TargetRepoName-$InitialEnvironmentName"
+    }
+    
+    # Check if the resource group already exists
+    Write-Host "[az-bootstrap] Checking if Azure resource group '$initialRgName' already exists..."
+    if (Test-AzResourceGroupExists -ResourceGroupName $initialRgName) {
+        throw "Azure resource group '$initialRgName' already exists. Please choose a different name."
+    }
+    
+    # Check if the GitHub repository already exists
+    Write-Host "[az-bootstrap] Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
+    if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $TargetRepoName) {
+        throw "GitHub repository '$actualOwner/$TargetRepoName' already exists. Please choose a different name."
+    }
+    
     Write-Host "[az-bootstrap] Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
     $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
     Invoke-Expression $cmd
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create new GitHub repository from template."
-    }
-
-    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
-        # Try to get the current user/org from gh CLI
-        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
-        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
     }
 
     $repoUrl = "https://github.com/$actualOwner/$TargetRepoName.git"
@@ -169,26 +200,18 @@ function Invoke-AzBootstrap {
             -AllowedMergeMethods $BranchAllowedMergeMethods `
             -EnableCopilotReview $BranchEnableCopilotReview
 
-        # Construct names for the initial environment
-        $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
-            $ResourceGroupName
-        }
-        else {
-            "rg$InitialEnvironmentName"
-        }
-        
         $planMiName = if (-not [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
             $PlanManagedIdentityName
         }
         else {
-            "mi$($RepoInfo.Repo)$InitialEnvironmentName-plan"
+            "mi-$($RepoInfo.Repo)-$InitialEnvironmentName-plan"
         }
 
         $applyMiName = if (-not [string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
             $ApplyManagedIdentityName
         }
         else {
-            "mi$($RepoInfo.Repo)$InitialEnvironmentName-apply"
+            "mi-$($RepoInfo.Repo)-$InitialEnvironmentName-apply"
         }
 
         $initialPlanEnvName = "${InitialEnvironmentName}-iac-plan"
@@ -214,6 +237,8 @@ function Invoke-AzBootstrap {
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams
+
+        # The configuration file is created by Add-AzBootstrapEnvironment if it can determine the repository path
     }
     catch {
         Write-Error "Failed to add initial environment '$InitialEnvironmentName': $_"
