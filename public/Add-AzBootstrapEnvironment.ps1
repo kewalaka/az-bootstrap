@@ -40,6 +40,14 @@ function Add-AzBootstrapEnvironment {
     $ArmTenantId = $azContext.TenantId
   }
 
+  # Check storage account name if provided
+  if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+    $storageAccountValidation = Test-AzStorageAccountNameAvailability -StorageAccountName $TerraformStateStorageAccountName
+    if (-not $storageAccountValidation.IsValid) {
+      throw "Storage account validation failed: $($storageAccountValidation.Reason)"
+    }
+  }
+
   $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $GitHubOwner -OverrideRepo $GitHubRepo
   if (-not $RepoInfo) {
     throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide -Owner and -Repo parameters."

@@ -56,6 +56,14 @@ function Invoke-AzBootstrap {
     if (-not $Location -or [string]::IsNullOrWhiteSpace($Location)) {
         throw "Location is required."
     }
+
+    # Check storage account name if provided
+    if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+        $storageAccountValidation = Test-AzStorageAccountNameAvailability -StorageAccountName $TerraformStateStorageAccountName
+        if (-not $storageAccountValidation.IsValid) {
+            throw "Storage account validation failed: $($storageAccountValidation.Reason)"
+        }
+    }
     #endregion
 
     #region: check target directory
