@@ -174,21 +174,21 @@ function Invoke-AzBootstrap {
             $ResourceGroupName
         }
         else {
-            "rg-$($RepoInfo.Repo)-$InitialEnvironmentName"
+            "rg$InitialEnvironmentName"
         }
         
         $planMiName = if (-not [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
             $PlanManagedIdentityName
         }
         else {
-            "mi-$($RepoInfo.Repo)-$InitialEnvironmentName-plan"
+            "mi$($RepoInfo.Repo)$InitialEnvironmentName-plan"
         }
 
         $applyMiName = if (-not [string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
             $ApplyManagedIdentityName
         }
         else {
-            $planMiName.Replace("-plan", "-apply")
+            "mi$($RepoInfo.Repo)$InitialEnvironmentName-apply"
         }
 
         $initialPlanEnvName = "${InitialEnvironmentName}-iac-plan"

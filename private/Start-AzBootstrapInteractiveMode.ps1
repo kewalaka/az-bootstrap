@@ -3,15 +3,15 @@ function Start-AzBootstrapInteractiveMode {
     [OutputType([hashtable])]
     param()
 
-    # Default values for interactive mode
+    # Initial empty defaults - we'll populate after getting target repo name
     $defaults = @{
         TemplateRepoUrl   = ""
         TargetRepoName    = ""
         Location          = ""
-        ResourceGroupName = "azb-rg"
-        PlanManagedIdentityName = "azb-mi-plan"
-        ApplyManagedIdentityName = "azb-mi-apply"
-        TerraformStateStorageAccountName = "azbstorage"
+        ResourceGroupName = ""
+        PlanManagedIdentityName = ""
+        ApplyManagedIdentityName = ""
+        TerraformStateStorageAccountName = ""
     }
 
     Write-Host "`n[az-bootstrap] Interactive Mode - Enter required values or press Enter to accept defaults`n" -ForegroundColor Cyan
@@ -37,6 +37,22 @@ function Start-AzBootstrapInteractiveMode {
         }
     }
     $defaults.TargetRepoName = $targetRepoName
+    
+    # Set environment name to default "dev" for naming purposes
+    $env = "dev"
+    
+    # Generate CAF-aligned names based on the target repo name
+    $defaultResourceGroupName = "rg$env"
+    $defaultPlanMIName = "mi$targetRepoName$env-plan"
+    $defaultApplyMIName = "mi$targetRepoName$env-apply"
+    # Generate storage account name with random padding for uniqueness
+    $randomPadding = Get-Random -Minimum 100 -Maximum 999
+    $defaultStorageName = "st$targetRepoName$env$randomPadding".ToLower()
+    # Ensure storage name is valid (lowercase alphanumeric only, and max 24 chars)
+    $defaultStorageName = $defaultStorageName -replace '[^a-z0-9]', ''
+    if ($defaultStorageName.Length -gt 24) {
+        $defaultStorageName = $defaultStorageName.Substring(0, 24)
+    }
 
     # Prompt for location
     $location = Read-Host "Enter Azure Location [australiaeast]"
@@ -45,38 +61,38 @@ function Start-AzBootstrapInteractiveMode {
     }
     $defaults.Location = $location
 
-    # Prompt for resource group name
-    $resourceGroupName = Read-Host "Enter Resource Group Name [azb-rg]"
+    # Prompt for resource group name with CAF-aligned default
+    $resourceGroupName = Read-Host "Enter Resource Group Name [$defaultResourceGroupName]"
     if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
-        $resourceGroupName = $defaults.ResourceGroupName
+        $resourceGroupName = $defaultResourceGroupName
     }
     $defaults.ResourceGroupName = $resourceGroupName
 
-    # Prompt for MI name
-    $planManagedIdentityName = Read-Host "Enter Plan Managed Identity Name [azb-mi-plan]"
+    # Prompt for Plan MI name with CAF-aligned default
+    $planManagedIdentityName = Read-Host "Enter Plan Managed Identity Name [$defaultPlanMIName]"
     if ([string]::IsNullOrWhiteSpace($planManagedIdentityName)) {
-        $planManagedIdentityName = $defaults.PlanManagedIdentityName
+        $planManagedIdentityName = $defaultPlanMIName
     }
     $defaults.PlanManagedIdentityName = $planManagedIdentityName
 
-    # Derive apply MI name from plan MI name if not specified
-    $applyManagedIdentityName = Read-Host "Enter Apply Managed Identity Name [azb-mi-apply]"
+    # Prompt for Apply MI name with CAF-aligned default
+    $applyManagedIdentityName = Read-Host "Enter Apply Managed Identity Name [$defaultApplyMIName]"
     if ([string]::IsNullOrWhiteSpace($applyManagedIdentityName)) {
-        $applyManagedIdentityName = $defaults.ApplyManagedIdentityName
+        $applyManagedIdentityName = $defaultApplyMIName
     }
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
 
-    # Prompt for storage account name
-    $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [azbstorage]"
+    # Prompt for storage account name with CAF-aligned default
+    $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$defaultStorageName]"
     if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-        $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
+        $terraformStateStorageAccountName = $defaultStorageName
     }
     # Validate storage account name format
     if ($terraformStateStorageAccountName -notmatch "^[a-z0-9]{3,24}$") {
         Write-Host "Storage account name must be 3-24 characters long and contain only lowercase letters and numbers." -ForegroundColor Yellow
-        $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [azbstorage]"
+        $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$defaultStorageName]"
         if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-            $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
+            $terraformStateStorageAccountName = $defaultStorageName
         }
     }
     $defaults.TerraformStateStorageAccountName = $terraformStateStorageAccountName

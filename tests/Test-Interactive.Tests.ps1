@@ -5,6 +5,9 @@ Describe "Start-AzBootstrapInteractiveMode" {
         
         # Mock Write-Host to avoid output during tests
         Mock Write-Host {}
+        
+        # Mock Get-Random to return consistent results for tests
+        Mock Get-Random { return 123 }
     }
     
     It "Should process interactive inputs correctly" {
@@ -33,6 +36,11 @@ Describe "Start-AzBootstrapInteractiveMode" {
         $result.Keys | Should -Contain "TemplateRepoUrl"
         $result.Keys | Should -Contain "TargetRepoName"
         $result.Keys | Should -Contain "Location"
+        
+        # Validate CAF-aligned naming convention defaults
+        $result.ResourceGroupName | Should -Be "rgdev" 
+        $result.PlanManagedIdentityName | Should -Be "mitest-repodev-plan"
+        $result.ApplyManagedIdentityName | Should -Be "mitest-repodev-apply"
     }
     
     It "Should return null when user cancels" {
