@@ -3,10 +3,8 @@ function Start-AzBootstrapInteractiveMode {
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)]
-        [hashtable]$Defaults
+        [hashtable]$defaults
     )
-
-    $defaults = $Defaults
 
     Write-Host "`n[az-bootstrap] Interactive Mode - Enter required values or press Enter to accept defaults`n" -ForegroundColor Cyan
 
@@ -27,6 +25,14 @@ function Start-AzBootstrapInteractiveMode {
         $targetRepoName = $defaults.TargetRepoName
     }
     $defaults.TargetRepoName = $targetRepoName
+
+    # Generate default resource and identity names (CAF-aligned)
+    $env = 'dev'
+    # Default storage account name
+    $randomPadding = Get-Random -Minimum 100 -Maximum 999
+    $storageDefault = "st$($defaults.TargetRepoName)$env$randomPadding" -replace '[^a-z0-9]', ''
+    if ($storageDefault.Length -gt 24) { $storageDefault = $storageDefault.Substring(0,24) }
+    $defaults.TerraformStateStorageAccountName = $storageDefault
 
     # Prompt for Azure Location
     $location = Read-Host "Enter Azure Location [$($defaults.Location)]"
@@ -56,20 +62,23 @@ function Start-AzBootstrapInteractiveMode {
     }
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
 
-    # Prompt for storage account name with CAF-aligned default
-    $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)]"
-    if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-        $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
+    # Prompt if user wants a Terraform state storage account (default yes)
+    $useTerraformStorage = Read-Host "Would you like to create a Terraform State Storage Account? (y/n) [y]"
+    if ([string]::IsNullOrWhiteSpace($useTerraformStorage)) { $useTerraformStorage = 'y' }
+    if ($useTerraformStorage -match '^[yY]$') {
+        # Loop until valid name or blank to skip
+        do {
+            $input = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)] (leave blank to skip)"
+            if ([string]::IsNullOrWhiteSpace($input)) {
+                $name = $null
+                break
+            }
+            $valid = Test-StorageAccountName -StorageAccountName $input
+        } while (-not $valid)
+        $defaults.TerraformStateStorageAccountName = $name
+    } else {
+        $defaults.TerraformStateStorageAccountName = $null
     }
-    # Validate storage account name format
-    if ($terraformStateStorageAccountName -notmatch "^[a-z0-9]{3,24}$") {
-        Write-Host "Storage account name must be 3-24 characters long and contain only lowercase letters and numbers." -ForegroundColor Yellow
-        $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)]"
-        if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-            $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
-        }
-    }
-    $defaults.TerraformStateStorageAccountName = $terraformStateStorageAccountName
 
     return $defaults
 }
