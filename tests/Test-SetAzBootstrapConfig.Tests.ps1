@@ -96,9 +96,9 @@ Describe "Set-AzBootstrapConfig" {
         Set-AzBootstrapConfig -TemplateAlias "bicep" -Value "https://github.com/example/bicep-template"
         
         # Read the content and verify both the old and new aliases exist
-        $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-        $config.templateAliases.terraform | Should -Be "https://github.com/example/terraform-template"
-        $config.templateAliases.bicep | Should -Be "https://github.com/example/bicep-template"
-        $config.defaultLocation | Should -Be "eastus"
+        $newConfig = Get-Content -Path $configPath -Raw | ConvertFrom-Json
+        $newConfig.templateAliases.terraform | Should -Be "https://github.com/example/terraform-template"
+        $newConfig.templateAliases.bicep | Should -Be "https://github.com/example/bicep-template"
+        $newConfig.defaultLocation | Should -Be "eastus"
     }
 }

@@ -18,11 +18,11 @@ function Get-AzBootstrapConfig {
     
     if (-not (Test-Path $configPath)) {
         Write-Host "[az-bootstrap] Configuration file does not exist. Use Set-AzBootstrapConfig to create it."
-        return
+        return $config
     }
 
     # Display template aliases if available
-    if ($config.ContainsKey('templateAliases') -and $config.templateAliases.Count -gt 0) {
+    if ($config -and $config.ContainsKey('templateAliases') -and $config.templateAliases.Count -gt 0) {
         Write-Host "`n[az-bootstrap] Template Aliases:"
         foreach ($alias in $config.templateAliases.Keys | Sort-Object) {
             Write-Host "  $alias -> $($config.templateAliases[$alias])"
@@ -32,7 +32,7 @@ function Get-AzBootstrapConfig {
     }
 
     # Display default location if available
-    if ($config.ContainsKey('defaultLocation') -and -not [string]::IsNullOrWhiteSpace($config.defaultLocation)) {
+    if ($config -and $config.ContainsKey('defaultLocation') -and -not [string]::IsNullOrWhiteSpace($config.defaultLocation)) {
         Write-Host "`n[az-bootstrap] Default Location: $($config.defaultLocation)"
     } else {
         Write-Host "`n[az-bootstrap] No default location configured."

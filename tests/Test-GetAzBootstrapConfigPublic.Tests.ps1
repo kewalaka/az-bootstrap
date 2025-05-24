@@ -43,12 +43,13 @@ Describe "Get-AzBootstrapConfig Public Function" {
         }
         
         # Capture output
-        $output = Get-AzBootstrapConfig -Verbose 2>&1
-        $outputString = $output | Out-String
+        $output = & {
+            Get-AzBootstrapConfig -Verbose
+        } 2>&1 | Out-String
         
         # Verify output
-        $outputString | Should -Match "Configuration file path: .*\.az-bootstrap\.jsonc"
-        $outputString | Should -Match "Configuration file does not exist"
+        $output | Should -Match "Configuration file path: .*\.az-bootstrap\.jsonc"
+        $output | Should -Match "Configuration file does not exist"
     }
     
     It "Displays template aliases and default location when config exists" {
@@ -70,15 +71,16 @@ Describe "Get-AzBootstrapConfig Public Function" {
         $testConfig | ConvertTo-Json | Set-Content -Path $configPath
         
         # Capture output
-        $output = Get-AzBootstrapConfig -Verbose 2>&1
-        $outputString = $output | Out-String
+        $output = & {
+            Get-AzBootstrapConfig -Verbose
+        } 2>&1 | Out-String
         
         # Verify output contains the expected information
-        $outputString | Should -Match "Configuration file path: .*\.az-bootstrap\.jsonc"
-        $outputString | Should -Match "Template Aliases:"
-        $outputString | Should -Match "terraform ->"
-        $outputString | Should -Match "bicep ->"
-        $outputString | Should -Match "Default Location: eastus"
+        $output | Should -Match "Configuration file path: .*\.az-bootstrap\.jsonc"
+        $output | Should -Match "Template Aliases:"
+        $output | Should -Match "terraform ->"
+        $output | Should -Match "bicep ->"
+        $output | Should -Match "Default Location: eastus"
     }
     
     It "Returns the configuration object for pipeline use" {
