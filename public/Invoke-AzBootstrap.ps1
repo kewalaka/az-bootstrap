@@ -43,7 +43,10 @@ function Invoke-AzBootstrap {
         [bool]$AddOwnerAsReviewer = $true,
 
         # optional storage account for terraform state
-        [string]$TerraformStateStorageAccountName = ""
+        [string]$TerraformStateStorageAccountName = "",
+        
+        # whether to wait for deployment to complete
+        [bool]$WaitForDeployment = $true
     )
 
     #region: check parameters
@@ -176,6 +179,7 @@ function Invoke-AzBootstrap {
             ApplyEnvironmentTeamReviewers    = $ApplyEnvironmentTeamReviewers
             AddOwnerAsReviewer               = $AddOwnerAsReviewer
             TerraformStateStorageAccountName = $TerraformStateStorageAccountName
+            WaitForDeployment                = $WaitForDeployment
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams
@@ -190,6 +194,11 @@ function Invoke-AzBootstrap {
 
     Write-Host "[az-bootstrap] Repository  : 'https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
     Write-Host "[az-bootstrap] ...cloned to: '$($TargetDirectory)'."
+    
+    if (-not $WaitForDeployment -and $DeploymentEnv.DeploymentPortalUrl) {
+        Write-Host "[az-bootstrap] Deployment   : '$($DeploymentEnv.DeploymentPortalUrl)'."
+    }
+    
     Write-Host "[az-bootstrap] Azure Bootstrap complete. 🎉"
 }
 

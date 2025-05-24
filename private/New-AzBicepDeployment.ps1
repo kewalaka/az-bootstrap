@@ -21,7 +21,8 @@ function New-AzBicepDeployment {
     [string]$ApplyEnvName,
     [Parameter(Mandatory)] # Subscription ID is required for subscription-level deployments
     [string]$ArmSubscriptionId,
-    [string]$TerraformStateStorageAccountName
+    [string]$TerraformStateStorageAccountName,
+    [bool]$WaitForCompletion = $true
   )
 
   $bicepTemplateFile = Join-Path $PSScriptRoot '..' 'templates' 'environment-infra.bicep'
@@ -60,57 +61,85 @@ function New-AzBicepDeployment {
 
   Write-Host "[az-bootstrap] Creating Azure infrastructure via deployment stack '$stackName'..."
   Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
-  $stdoutfile = New-TemporaryFile
-  $stderrfile = New-TemporaryFile
-  $process = Start-Process "az" -ArgumentList $azCliArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stdoutfile -RedirectStandardError $stderrfile
-  $stdout = Get-Content $stdoutfile -Raw
-  $stderr = Get-Content $stderrfile -ErrorAction SilentlyContinue
-  Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
-
-  if ($process.ExitCode -ne 0) {
-    Write-Error "[az-bootstrap] Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
-    Write-Error "[az-bootstrap] Standard Error: $stderr"
-    Write-Error "[az-bootstrap] Standard Output (may contain JSON error from Azure): $stdout"
-    throw "Stack deployment for environment '$EnvironmentName' failed."
-  }
-
-  $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
-  if (-not $deploymentOutput -or -not $deploymentOutput.outputs) {
-    Write-Error "[az-bootstrap] Stack deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
-    throw "Stack deployment for environment '$EnvironmentName' did not produce expected outputs."
-  }
-
-  $planManagedIdentityClientId = $null
-  $applyManagedIdentityClientId = $null
-
-  $planManagedIdentityClientId = $deploymentOutput.outputs.planManagedIdentityClientId.value
-
-  if (-not $planManagedIdentityClientId) {
-    throw "Failed to retrieve Primary Managed Identity Client ID from Bicep deployment for environment '$EnvironmentName'."
-  }
-
-  $applyManagedIdentityClientId = $deploymentOutput.outputs.applyManagedIdentityClientId.value
-
-  if (-not $applyManagedIdentityClientId) {
-    throw "Failed to retrieve Apply-Specific Managed Identity Client ID from Bicep deployment when CreateSeparateApplyMI was true for environment '$EnvironmentName'."
-  }
-
-  $duration = $deploymentOutput.duration
-  try {
-    $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
-    $friendlyDuration = "in {0}m {1}s." -f $ts.Minutes, $ts.Seconds
-  } catch {
-    $friendlyDuration = "."
-  }
   
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration
-  Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
-  Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
+  if ($WaitForCompletion) {
+    $stdoutfile = New-TemporaryFile
+    $stderrfile = New-TemporaryFile
+    $process = Start-Process "az" -ArgumentList $azCliArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stdoutfile -RedirectStandardError $stderrfile
+    $stdout = Get-Content $stdoutfile -Raw
+    $stderr = Get-Content $stderrfile -ErrorAction SilentlyContinue
+    Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
+
+    if ($process.ExitCode -ne 0) {
+      Write-Error "[az-bootstrap] Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
+      Write-Error "[az-bootstrap] Standard Error: $stderr"
+      Write-Error "[az-bootstrap] Standard Output (may contain JSON error from Azure): $stdout"
+      throw "Stack deployment for environment '$EnvironmentName' failed."
+    }
+
+    $deploymentOutput = $stdout | ConvertFrom-Json -ErrorAction SilentlyContinue
+    if (-not $deploymentOutput -or -not $deploymentOutput.outputs) {
+      Write-Error "[az-bootstrap] Stack deployment outputs not found or failed to parse. Raw STDOUT: $stdout"
+      throw "Stack deployment for environment '$EnvironmentName' did not produce expected outputs."
+    }
+
+    $planManagedIdentityClientId = $null
+    $applyManagedIdentityClientId = $null
+
+    $planManagedIdentityClientId = $deploymentOutput.outputs.planManagedIdentityClientId.value
+
+    if (-not $planManagedIdentityClientId) {
+      throw "Failed to retrieve Primary Managed Identity Client ID from Bicep deployment for environment '$EnvironmentName'."
+    }
+
+    $applyManagedIdentityClientId = $deploymentOutput.outputs.applyManagedIdentityClientId.value
+
+    if (-not $applyManagedIdentityClientId) {
+      throw "Failed to retrieve Apply-Specific Managed Identity Client ID from Bicep deployment when CreateSeparateApplyMI was true for environment '$EnvironmentName'."
+    }
+
+    $duration = $deploymentOutput.duration
+    try {
+      $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
+      $friendlyDuration = "in {0}m {1}s." -f $ts.Minutes, $ts.Seconds
+    } catch {
+      $friendlyDuration = "."
+    }
+    
+    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
+    Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration
+  }
+  else {
+    # Start the deployment without waiting
+    $process = Start-Process "az" -ArgumentList $azCliArgs -NoNewWindow -PassThru
+    
+    # Generate portal URL to monitor deployment
+    $portalUrl = "https://portal.azure.com/#blade/HubsExtension/StacksDetailsBlade/id/subscriptions/$ArmSubscriptionId/providers/Microsoft.Resources/deploymentStacks/$stackName"
+    
+    Write-Host -NoNewline "`u{1F552} " # Clock emoji
+    Write-Host "Bicep deployment for '$EnvironmentName' started and running in background."
+    Write-Host "Monitor deployment progress at: $portalUrl"
+    
+    # Since we're not waiting, we need to generate mock client IDs
+    # These will be updated later when the real values are known
+    $planManagedIdentityClientId = "pending-deployment-$stackName"
+    $applyManagedIdentityClientId = "pending-deployment-$stackName"
+  }
+  if ($WaitForCompletion) {
+    Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
+    Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
+  }
+  else {
+    Write-Verbose "[az-bootstrap] Deployment started in non-blocking mode. Client IDs will be available when deployment completes."
+  }
 
   return [PSCustomObject]@{
     PlanManagedIdentityClientId  = $planManagedIdentityClientId
     ApplyManagedIdentityClientId = $applyManagedIdentityClientId
+    DeploymentStackName          = $stackName
+    DeploymentPortalUrl          = if (-not $WaitForCompletion) {
+      "https://portal.azure.com/#blade/HubsExtension/StacksDetailsBlade/id/subscriptions/$ArmSubscriptionId/providers/Microsoft.Resources/deploymentStacks/$stackName"
+    } else { $null }
   }
 }
 
