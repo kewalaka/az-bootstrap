@@ -1,5 +1,12 @@
 name: AzBootstrap Integration Test
 
+# This workflow runs an end-to-end integration test of the az-bootstrap module
+# It can be triggered manually and requires the following secrets to be configured:
+#   - AZURE_CLIENT_ID: The client ID of a service principal with permissions to create resources
+#   - AZURE_TENANT_ID: The tenant ID of the Azure subscription
+#   - AZURE_SUBSCRIPTION_ID: The ID of the Azure subscription
+#   - GH_TOKEN: A GitHub token with permissions to create repositories
+
 on:
   workflow_dispatch:
     # Manual trigger with no inputs required
@@ -32,20 +39,25 @@ jobs:
       
       - name: Setup GitHub CLI
         run: |
+          gh --version
           gh auth status || gh auth login --with-token <<< "${{ secrets.GH_TOKEN }}"
+          echo "GitHub CLI authenticated successfully"
         shell: bash
         
-      - name: Install Az module
+      - name: Install required PowerShell modules
         run: |
           pwsh -Command "Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force"
+          echo "PowerShell modules installed successfully"
         
       - name: Run Integration Test
         run: |
           cd ${{ github.workspace }}
+          pwsh -Command "Write-Host 'Starting integration test' -ForegroundColor Green"
           pwsh -Command "./integration-tests/Invoke-IntegrationTest.ps1"
         
       - name: Clean up resources on completion
         if: ${{ always() }}
         run: |
           cd ${{ github.workspace }}
+          pwsh -Command "Write-Host 'Starting cleanup' -ForegroundColor Yellow"
           pwsh -Command "./integration-tests/Invoke-IntegrationTest.ps1 -Cleanup"
