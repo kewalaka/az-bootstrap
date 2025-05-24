@@ -71,7 +71,7 @@ function Start-AzBootstrapInteractiveMode {
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
 
     # Do you want a Terraform state storage account? (default yes)
-    $useTerraformStorage = Read-Host "Would you like to create a Terraform State Storage Account? (y/n) [y]"
+    $useTerraformStorage = Read-Host "Would you like to create a Terraform State Storage Account? [y/n]"
     if ([string]::IsNullOrWhiteSpace($useTerraformStorage)) { $useTerraformStorage = 'y' }
     if ($useTerraformStorage -match '^[yY]$') {
         do {
