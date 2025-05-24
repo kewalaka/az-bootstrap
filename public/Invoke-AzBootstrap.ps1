@@ -58,22 +58,6 @@ function Invoke-AzBootstrap {
         }
     }
 
-    #region: construct defaults
-    # Use the provided resource group name or construct it
-    $initialRgName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
-        $ResourceGroupName
-    }
-    else {
-        "rg-$TargetRepoName-$InitialEnvironmentName"
-    }
-
-    $PlanManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'plan' -Override $PlanManagedIdentityName
-    $ApplyManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'apply' -Override $ApplyManagedIdentityName
-
-    $initialPlanEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'plan'
-    $initialApplyEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'apply'
-    #endregion
-
     #region:check parameters
     # Check if we're in interactive mode (not all required parameters have been provided)
     $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
@@ -84,10 +68,11 @@ function Invoke-AzBootstrap {
         Write-Verbose "[az-bootstrap] No required parameters provided, entering interactive mode."
         # Prepare defaults for interactive mode
         $defaults = @{ 
+            $InitialEnvironmentName = $InitialEnvironmentName
             TemplateRepoUrl                   = $TemplateRepoUrl
             TargetRepoName                    = $TargetRepoName
             Location                          = $Location
-            ResourceGroupName                 = $initialRgName
+            ResourceGroupName                 = $ResourceGroupName
             PlanManagedIdentityName           = $PlanManagedIdentityName
             ApplyManagedIdentityName          = $ApplyManagedIdentityName
             TerraformStateStorageAccountName  = $TerraformStateStorageAccountName
@@ -103,21 +88,25 @@ function Invoke-AzBootstrap {
         $ApplyManagedIdentityName = $interactiveParams.ApplyManagedIdentityName
         $TerraformStateStorageAccountName = $interactiveParams.TerraformStateStorageAccountName
     }
-    
-    # Validate required parameters are now present
-    if (-not $TemplateRepoUrl -or [string]::IsNullOrWhiteSpace($TemplateRepoUrl)) {
-        throw "Template repository URL is required."
-    }
-    if (-not $TargetRepoName -or [string]::IsNullOrWhiteSpace($TargetRepoName)) {
-        throw "Target repository name is required."
-    }
-    if (-not $Location -or [string]::IsNullOrWhiteSpace($Location)) {
-        throw "Location is required."
-    }
+    else
+    {
+        # in the non-interactive mode, we still need to infer the defaults
+        $ResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
+            $ResourceGroupName
+        }
+        else {
+            "rg-$TargetRepoName-$InitialEnvironmentName"
+        }
 
-    # Validate storage account name if provided
-    if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
-        Test-StorageAccountName -StorageAccountName $TerraformStateStorageAccountName
+        $PlanManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'plan' -Override $PlanManagedIdentityName
+        $ApplyManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'apply' -Override $ApplyManagedIdentityName
+
+        $initialPlanEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'plan'
+        $initialApplyEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'apply'
+
+        if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+            Test-StorageAccountName -StorageAccountName $TerraformStateStorageAccountName
+        }
     }
 
     # az boostrap expects an empty target directory
@@ -162,9 +151,9 @@ function Invoke-AzBootstrap {
     }
 
     # Check if the resource group already exists
-    Write-Host "[az-bootstrap] Checking if Azure resource group '$initialRgName' already exists..."
-    if (Test-AzResourceGroupExists -ResourceGroupName $initialRgName) {
-        throw "Azure resource group '$initialRgName' already exists. Please choose a different name."
+    Write-Host "[az-bootstrap] Checking if Azure resource group '$ResourceGroupName' already exists..."
+    if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
+        throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
     }
     
     # Check if the GitHub repository already exists
@@ -231,7 +220,7 @@ function Invoke-AzBootstrap {
         Write-Host "[az-bootstrap] Creating initial environment '$InitialEnvironmentName'..."
         $addEnvParams = @{
             EnvironmentName                  = $InitialEnvironmentName
-            ResourceGroupName                = $initialRgName
+            ResourceGroupName                = $ResourceGroupName
             Location                         = $Location
             PlanManagedIdentityName          = $PlanManagedIdentityName
             ApplyManagedIdentityName         = $ApplyManagedIdentityName

@@ -3,6 +3,7 @@ Describe "Start-AzBootstrapInteractiveMode" {
         # Directly import the function
         . "$PSScriptRoot/../private/Start-AzBootstrapInteractiveMode.ps1"
         . "$PSScriptRoot/../private/Test-StorageAccountName.ps1"
+        . "$PSScriptRoot/../private/Get-ManagedIdentityName.ps1"
 
         # Mock Write-Host and Test-StorageAccountName
         Mock Write-Host {}
@@ -31,8 +32,9 @@ Describe "Start-AzBootstrapInteractiveMode" {
         }
         
         $result = Start-AzBootstrapInteractiveMode -Defaults @{
+            InitialEnvironmentName = 'dev';
             TemplateRepoUrl = '';
-            TargetRepoName = 'dev';
+            TargetRepoName = 'my-repo';
             Location = 'eastus';
             ResourceGroupName = 'rgdev';
             PlanManagedIdentityName = 'mitest-repodev-plan';
