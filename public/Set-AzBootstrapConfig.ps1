@@ -8,7 +8,7 @@ function Set-AzBootstrapConfig {
         [string]$Value
     )
 
-    # Get the existing configuration
+    # Get the existing configuration using private function
     $config = & "$PSScriptRoot/../private/Get-AzBootstrapConfig.ps1"
 
     # Determine config file path based on OS

@@ -2,6 +2,9 @@ Describe "Set-AzBootstrapConfig" {
     BeforeAll { 
         # Import the module
         Import-Module "$PSScriptRoot/../az-bootstrap.psd1" -Force
+        
+        # Manually dot source the function files if they're not loaded
+        . "$PSScriptRoot/../public/Set-AzBootstrapConfig.ps1"
     }
     
     BeforeEach {
