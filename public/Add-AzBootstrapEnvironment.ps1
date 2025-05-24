@@ -29,7 +29,9 @@ function Add-AzBootstrapEnvironment {
     [string]$ArmTenantId,
     [string]$ArmSubscriptionId,
 
-    [string]$TerraformStateStorageAccountName
+    [string]$TerraformStateStorageAccountName,
+    
+    [bool]$WaitForDeployment = $true
   )
 
   # Retrieve Azure context (Subscription ID and Tenant ID)
@@ -75,10 +77,18 @@ function Add-AzBootstrapEnvironment {
     -PlanEnvName $actualPlanEnvName `
     -ApplyEnvName $actualApplyEnvName `
     -ArmSubscriptionId $ArmSubscriptionId `
-    -TerraformStateStorageAccountName $TerraformStateStorageAccountName
+    -TerraformStateStorageAccountName $TerraformStateStorageAccountName `
+    -WaitForCompletion $WaitForDeployment
 
   if (-not $infraDetails) {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
+  }
+
+  # If we're not waiting for deployment to complete, provide deployment URL info
+  if (-not $WaitForDeployment) {
+    Write-Host "[az-bootstrap] Infrastructure deployment is running in the background."
+    Write-Host "[az-bootstrap] You can continue working while deployment completes."
+    Write-Host "[az-bootstrap] Monitor progress at: $($infraDetails.DeploymentPortalUrl)"
   }
 
   $secrets = @{
@@ -131,7 +141,9 @@ function Add-AzBootstrapEnvironment {
     PlanGitHubEnvironmentName    = $actualPlanEnvName
     ApplyGitHubEnvironmentName   = $actualApplyEnvName
     PlanManagedIdentityClientId  = $infraDetails.PlanManagedIdentityClientId
-    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId 
+    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId
+    DeploymentStackName          = $infraDetails.DeploymentStackName
+    DeploymentPortalUrl          = $infraDetails.DeploymentPortalUrl
   }
 }
 

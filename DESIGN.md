@@ -15,6 +15,9 @@
     - Two Managed Identities (plan/apply)
     - Federated credentials for GitHub OIDC
     - RBAC assignments (Contributor, RBAC Admin)
+  - Supports both blocking and non-blocking deployment modes:
+    - Blocking mode (default): Waits for deployment completion before proceeding
+    - Non-blocking mode: Starts deployment and provides URL for monitoring, allowing workflow to continue
 - **GitHub Configuration:**
   - Sets up environments (e.g., dev-iac-plan, dev-iac-apply), secrets, and policies.
   - Reviewer/team/secret params are optional and skipped if empty.
@@ -27,7 +30,7 @@
 - **Add-AzBootstrapEnvironment:** Adds a new environment (Azure infra + GitHub config).
 - **Remove-AzBootstrapEnvironment:** Removes an environment.
 - **Install-GitHubCLI:** Ensures GitHub CLI is available.
-- **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
+- **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC). Supports both blocking (default) and non-blocking deployments via the `WaitForCompletion` parameter.
 - **New-GitHubEnvironment/Secrets/Policy:** Manages GitHub environments and policies.
 
 ## Design Principles
