@@ -57,7 +57,7 @@ function New-AzBicepDeployment {
   )
   $azCliArgs += $activeBicepParams
   Write-BootstrapLog "Creating Azure infrastructure via deployment stack '$stackName'..."
-  Write-Verbose "Executing: az $($azCliArgs -join ' ')"
+  Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
   $stderrfile = New-TemporaryFile
   $process = Start-Process "az" -ArgumentList $azCliArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stdoutfile -RedirectStandardError $stderrfile
