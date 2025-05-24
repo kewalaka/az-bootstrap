@@ -158,6 +158,10 @@ $params = @{
   # Name for the initial environment (default: "dev")
   InitialEnvironmentName = $environment          
 
+  # Wait for Azure deployment to complete (default: $true)
+  # Set to $false to continue execution without waiting
+  WaitForDeployment = $false
+
   # GitHub users/teams required to approve deployments to apply environment
   ApplyEnvironmentUserReviewers = @("reviewer1", "reviewer2")
 
