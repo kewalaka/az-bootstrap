@@ -2,10 +2,23 @@ param (
     [switch]$Cleanup
 )
 
-# Script to perform end-to-end integration test of az-bootstrap module
-# This runs in two modes:
+# Integration Test Script for az-bootstrap module
+# This script performs an end-to-end test of the az-bootstrap module
+# by creating a new repository from a template and deploying Azure resources.
+#
+# It runs in two modes:
 # 1. Default: Create resources and validate
 # 2. With -Cleanup: Delete resources created in first mode
+#
+# Requirements:
+# - PowerShell 7.0+
+# - Azure CLI authenticated with 'az login'
+# - GitHub CLI authenticated with 'gh auth login'
+# - Az PowerShell module installed
+#
+# Usage:
+#   - To run the test:  ./Invoke-IntegrationTest.ps1
+#   - To clean up:      ./Invoke-IntegrationTest.ps1 -Cleanup
 
 # Setup
 $ErrorActionPreference = 'Stop'
