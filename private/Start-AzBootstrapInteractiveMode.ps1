@@ -68,14 +68,14 @@ function Start-AzBootstrapInteractiveMode {
     if ($useTerraformStorage -match '^[yY]$') {
         # Loop until valid name or blank to skip
         do {
-            $input = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)] (leave blank to skip)"
+            $storageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)] (leave blank to skip)"
             if ([string]::IsNullOrWhiteSpace($input)) {
-                $name = $null
+                $storageAccountName = $null
                 break
             }
-            $valid = Test-StorageAccountName -StorageAccountName $input
+            $valid = Test-StorageAccountName -StorageAccountName $storageAccountName
         } while (-not $valid)
-        $defaults.TerraformStateStorageAccountName = $name
+        $defaults.TerraformStateStorageAccountName = $storageAccountName
     } else {
         $defaults.TerraformStateStorageAccountName = $null
     }
