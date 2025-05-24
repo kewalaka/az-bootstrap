@@ -28,7 +28,9 @@
 - **Remove-AzBootstrapEnvironment:** Removes an environment.
 - **Install-GitHubCLI:** Ensures GitHub CLI is available.
 - **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
-- **New-GitHubEnvironment/Secrets/Policy:** Manages GitHub environments and policies.
+- **New-GitHubEnvironment:** Creates or updates a GitHub environment.
+- **Set-GitHubEnvironmentSecrets:** Sets secrets for a GitHub environment.
+- **Set-GitHubEnvironmentPolicy:** Configures deployment branch policy.
 
 ## Design Principles
 

@@ -1,46 +1,55 @@
 Describe "Test-GitHubRepositoryExists" {
-    BeforeAll {
-        # Load the module and functions
-        $modulePath = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
-        . "$modulePath\private\Test-GitHubRepositoryExists.ps1"
-        . "$modulePath\private\Invoke-GitHubCliCommand.ps1"
+    BeforeAll { 
+        # Import the module
+        Import-Module "$PSScriptRoot/../az-bootstrap.psd1" -Force
     }
 
-    Context "When testing GitHub repository existence" {
-        It "Should return true when repository exists" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { return "test-repo" }
+    InModuleScope 'az-bootstrap' {
+        Context "When testing GitHub repository existence" {
+            BeforeAll {
+                # Define the mock outside of the It blocks to ensure it's available               
+                Mock Write-BootstrapLog {
+                    param(
+                        [string]$Message,
+                        [string]$Level,
+                        [switch]$NoPrefix
+                    )
+                    # Do nothing
+                }
+            }
 
-            # Act
-            $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
+            It "Should return true when repository exists" {
+                Mock Invoke-GitHubCliCommand { "test-repo" }
 
-            # Assert
-            $result | Should -BeTrue
-            Should -InvokeVerifiable
-        }
+                # Act
+                $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
 
-        It "Should return false when repository does not exist" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { throw "Not Found" }
+                # Assert
+                $result | Should -BeTrue
+                Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
+            }
 
-            # Act
-            $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "nonexistent-repo"
+            It "Should return false when repository does not exist" {
+                Mock Invoke-GitHubCliCommand { throw "Not Found" }
 
-            # Assert
-            $result | Should -BeFalse
-            Should -InvokeVerifiable
-        }
+                # Act
+                $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "nonexistent-repo"
 
-        It "Should return false when the repository name doesn't match" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { return "different-repo" }
+                # Assert
+                $result | Should -BeFalse
+                Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
+            }
 
-            # Act
-            $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
+            It "Should return false when the repository name doesn't match" {
+                Mock Invoke-GitHubCliCommand { "different-repo" }
 
-            # Assert
-            $result | Should -BeFalse
-            Should -InvokeVerifiable
+                # Act
+                $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
+
+                # Assert
+                $result | Should -BeFalse
+                Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
+            }
         }
     }
 }

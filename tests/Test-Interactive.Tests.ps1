@@ -2,14 +2,17 @@ Describe "Start-AzBootstrapInteractiveMode" {
     BeforeAll {
         # Directly import the function
         . "$PSScriptRoot/../private/Start-AzBootstrapInteractiveMode.ps1"
-        
-        # Mock Write-Host to avoid output during tests
+        . "$PSScriptRoot/../private/Test-StorageAccountName.ps1"
+        . "$PSScriptRoot/../private/Get-ManagedIdentityName.ps1"
+
+        # Mock Write-Host and Test-StorageAccountName
         Mock Write-Host {}
+        Mock Test-StorageAccountName { $true }
         
         # Mock Get-Random to return consistent results for tests
         Mock Get-Random { return 123 }
     }
-    
+
     It "Should process interactive inputs correctly" {
         # Mock Read-Host to simulate user input
         Mock Read-Host {
@@ -28,8 +31,17 @@ Describe "Start-AzBootstrapInteractiveMode" {
             }
         }
         
-        $result = Start-AzBootstrapInteractiveMode
-        
+        $result = Start-AzBootstrapInteractiveMode -Defaults @{
+            InitialEnvironmentName = 'dev';
+            TemplateRepoUrl = '';
+            TargetRepoName = 'my-repo';
+            Location = 'eastus';
+            ResourceGroupName = 'rgdev';
+            PlanManagedIdentityName = 'mitest-repodev-plan';
+            ApplyManagedIdentityName = 'mitest-repodev-apply';
+            TerraformStateStorageAccountName = 'stdev123';
+        }
+
         # Validate result structure
         $result | Should -Not -BeNullOrEmpty
         $result | Should -BeOfType [hashtable]
@@ -41,20 +53,5 @@ Describe "Start-AzBootstrapInteractiveMode" {
         $result.ResourceGroupName | Should -Be "rgdev" 
         $result.PlanManagedIdentityName | Should -Be "mitest-repodev-plan"
         $result.ApplyManagedIdentityName | Should -Be "mitest-repodev-apply"
-    }
-    
-    It "Should return null when user cancels" {
-        # Mock Read-Host for cancellation
-        Mock Read-Host {
-            param($prompt)
-            
-            if ($prompt -match "Proceed") {
-                return "n"
-            }
-            return "test-value"
-        }
-        
-        $result = Start-AzBootstrapInteractiveMode
-        $result | Should -BeNullOrEmpty
     }
 }

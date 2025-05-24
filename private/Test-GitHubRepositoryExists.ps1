@@ -7,6 +7,7 @@ function Test-GitHubRepositoryExists {
         [Parameter(Mandatory = $true)]
         [string]$Repo
     )
+    
 
     $cmd = @(
         "gh", "repo", "view", "$Owner/$Repo", "--json", "name", "--jq", ".name"
