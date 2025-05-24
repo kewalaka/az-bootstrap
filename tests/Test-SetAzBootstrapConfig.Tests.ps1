@@ -47,8 +47,8 @@ Describe "Set-AzBootstrapConfig" {
         Test-Path $configPath | Should -Be $true
         
         # Read the content and verify
-        $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-        $config.templateAliases.terraform | Should -Be "https://github.com/example/terraform-template"
+        $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json -AsHashtable
+        $config.templateAliases["terraform"] | Should -Be "https://github.com/example/terraform-template"
     }
     
     It "Updates an existing template alias" {
@@ -71,8 +71,8 @@ Describe "Set-AzBootstrapConfig" {
         Set-AzBootstrapConfig -TemplateAlias "terraform" -Value "https://github.com/new/terraform-template"
         
         # Read the content and verify it was updated
-        $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-        $config.templateAliases.terraform | Should -Be "https://github.com/new/terraform-template"
+        $config = Get-Content -Path $configPath -Raw | ConvertFrom-Json -AsHashtable
+        $config.templateAliases["terraform"] | Should -Be "https://github.com/new/terraform-template"
     }
     
     It "Adds a new alias to existing configuration" {
@@ -90,15 +90,16 @@ Describe "Set-AzBootstrapConfig" {
             }
             defaultLocation = "eastus"
         }
-        $initialConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $configPath
+        $initialConfigJson = $initialConfig | ConvertTo-Json -Depth 10
+        $initialConfigJson | Set-Content -Path $configPath
         
         # Add a new template alias
         Set-AzBootstrapConfig -TemplateAlias "bicep" -Value "https://github.com/example/bicep-template"
         
         # Read the content and verify both the old and new aliases exist
-        $newConfig = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-        $newConfig.templateAliases.terraform | Should -Be "https://github.com/example/terraform-template"
-        $newConfig.templateAliases.bicep | Should -Be "https://github.com/example/bicep-template"
+        $newConfig = Get-Content -Path $configPath -Raw | ConvertFrom-Json -AsHashtable
+        $newConfig.templateAliases["terraform"] | Should -Be "https://github.com/example/terraform-template"
+        $newConfig.templateAliases["bicep"] | Should -Be "https://github.com/example/bicep-template"
         $newConfig.defaultLocation | Should -Be "eastus"
     }
 }
