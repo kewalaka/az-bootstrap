@@ -132,7 +132,7 @@ The az-bootstrap repository contains a PowerShell module designed to automate th
 - If in doubt, prefer explicit, parameterized, and testable code
 - Azure infrastructure is primarily provisioned by `New-AzBicepDeployment` calling `az deployment sub create` with the `templates/environment-infra.bicep` file.
 - The Bicep template handles RG creation, creation of **two** MIs (plan and apply), federated credentials for both, and RBAC assignments (Contributor, Role Based Access Control Administrator) for both.
-- When working with developers on tests, focus on the specific test being investigated, and only change other tests is absoluately required.
+- When working with developers on tests, focus on the specific test being investigated, and only change other tests is absolutely required.
 - Try to follow the import-module pattern when writing tests, using InModuleScope and mocking to exercise private functions.
 - LLMs struggle with PowerShell testing syntax, so be careful about getting in a loop of "fixing" tests that are already correct or getting into a circular loop of "fixing" the code that is already correct.
 - You don't need to validate parameters have been provided if they already have mandatory attributes in the function definition, but it may be necessary to validate the right values have been given.
