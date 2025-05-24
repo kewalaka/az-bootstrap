@@ -42,7 +42,7 @@ function Start-AzBootstrapInteractiveMode {
     }
     $defaults.Location = $location
 
-    # Resouce Group
+    # Resource Group
     $resourceGroupName = Read-Host "Enter Resource Group Name [$($defaults.ResourceGroupName)]"
     if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
         $resourceGroupName = $defaults.ResourceGroupName
