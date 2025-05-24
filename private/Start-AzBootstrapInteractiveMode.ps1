@@ -1,18 +1,12 @@
 function Start-AzBootstrapInteractiveMode {
     [CmdletBinding()]
     [OutputType([hashtable])]
-    param()
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Defaults
+    )
 
-    # Initial empty defaults - we'll populate after getting target repo name
-    $defaults = @{
-        TemplateRepoUrl   = ""
-        TargetRepoName    = ""
-        Location          = ""
-        ResourceGroupName = ""
-        PlanManagedIdentityName = ""
-        ApplyManagedIdentityName = ""
-        TerraformStateStorageAccountName = ""
-    }
+    $defaults = $Defaults
 
     Write-Host "`n[az-bootstrap] Interactive Mode - Enter required values or press Enter to accept defaults`n" -ForegroundColor Cyan
 
@@ -27,94 +21,55 @@ function Start-AzBootstrapInteractiveMode {
     }
     $defaults.TemplateRepoUrl = $templateRepoUrl
 
-    # Prompt for target repo name
-    $targetRepoName = Read-Host "Enter Target Repository Name"
+    # Prompt for Target Repository Name
+    $targetRepoName = Read-Host "Enter Target Repository Name [$($defaults.TargetRepoName)]"
     if ([string]::IsNullOrWhiteSpace($targetRepoName)) {
-        Write-Host "Target Repository Name is required." -ForegroundColor Red
-        $targetRepoName = Read-Host "Enter Target Repository Name"
-        if ([string]::IsNullOrWhiteSpace($targetRepoName)) {
-            throw "Target Repository Name is required to proceed."
-        }
+        $targetRepoName = $defaults.TargetRepoName
     }
     $defaults.TargetRepoName = $targetRepoName
-    
-    # Set environment name to default "dev" for naming purposes
-    $env = "dev"
-    
-    # Generate CAF-aligned names based on the target repo name
-    $defaultResourceGroupName = "rg$env"
-    $defaultPlanMIName = "mi$targetRepoName$env-plan"
-    $defaultApplyMIName = "mi$targetRepoName$env-apply"
-    # Generate storage account name with random padding for uniqueness
-    $randomPadding = Get-Random -Minimum 100 -Maximum 999
-    $defaultStorageName = "st$targetRepoName$env$randomPadding".ToLower()
-    # Ensure storage name is valid (lowercase alphanumeric only, and max 24 chars)
-    $defaultStorageName = $defaultStorageName -replace '[^a-z0-9]', ''
-    if ($defaultStorageName.Length -gt 24) {
-        $defaultStorageName = $defaultStorageName.Substring(0, 24)
-    }
 
-    # Prompt for location
-    $location = Read-Host "Enter Azure Location [australiaeast]"
+    # Prompt for Azure Location
+    $location = Read-Host "Enter Azure Location [$($defaults.Location)]"
     if ([string]::IsNullOrWhiteSpace($location)) {
-        $location = "australiaeast"
+        $location = $defaults.Location
     }
     $defaults.Location = $location
 
     # Prompt for resource group name with CAF-aligned default
-    $resourceGroupName = Read-Host "Enter Resource Group Name [$defaultResourceGroupName]"
+    $resourceGroupName = Read-Host "Enter Resource Group Name [$($defaults.ResourceGroupName)]"
     if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
-        $resourceGroupName = $defaultResourceGroupName
+        $resourceGroupName = $defaults.ResourceGroupName
     }
     $defaults.ResourceGroupName = $resourceGroupName
 
     # Prompt for Plan MI name with CAF-aligned default
-    $planManagedIdentityName = Read-Host "Enter Plan Managed Identity Name [$defaultPlanMIName]"
+    $planManagedIdentityName = Read-Host "Enter Plan Managed Identity Name [$($defaults.PlanManagedIdentityName)]"
     if ([string]::IsNullOrWhiteSpace($planManagedIdentityName)) {
-        $planManagedIdentityName = $defaultPlanMIName
+        $planManagedIdentityName = $defaults.PlanManagedIdentityName
     }
     $defaults.PlanManagedIdentityName = $planManagedIdentityName
 
     # Prompt for Apply MI name with CAF-aligned default
-    $applyManagedIdentityName = Read-Host "Enter Apply Managed Identity Name [$defaultApplyMIName]"
+    $applyManagedIdentityName = Read-Host "Enter Apply Managed Identity Name [$($defaults.ApplyManagedIdentityName)]"
     if ([string]::IsNullOrWhiteSpace($applyManagedIdentityName)) {
-        $applyManagedIdentityName = $defaultApplyMIName
+        $applyManagedIdentityName = $defaults.ApplyManagedIdentityName
     }
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
 
     # Prompt for storage account name with CAF-aligned default
-    $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$defaultStorageName]"
+    $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)]"
     if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-        $terraformStateStorageAccountName = $defaultStorageName
+        $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
     }
     # Validate storage account name format
     if ($terraformStateStorageAccountName -notmatch "^[a-z0-9]{3,24}$") {
         Write-Host "Storage account name must be 3-24 characters long and contain only lowercase letters and numbers." -ForegroundColor Yellow
-        $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$defaultStorageName]"
+        $terraformStateStorageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)]"
         if ([string]::IsNullOrWhiteSpace($terraformStateStorageAccountName)) {
-            $terraformStateStorageAccountName = $defaultStorageName
+            $terraformStateStorageAccountName = $defaults.TerraformStateStorageAccountName
         }
     }
     $defaults.TerraformStateStorageAccountName = $terraformStateStorageAccountName
-
-    # Display summary of configuration
-    Write-Host "`n--- Configuration Summary ---" -ForegroundColor Green
-    Write-Host "Template Repository URL      : $($defaults.TemplateRepoUrl)"
-    Write-Host "Target Repository Name       : $($defaults.TargetRepoName)"
-    Write-Host "Azure Location               : $($defaults.Location)"
-    Write-Host "Resource Group Name          : $($defaults.ResourceGroupName)"
-    Write-Host "Plan Managed Identity Name   : $($defaults.PlanManagedIdentityName)"
-    Write-Host "Apply Managed Identity Name  : $($defaults.ApplyManagedIdentityName)"
-    Write-Host "Terraform State Storage Name : $($defaults.TerraformStateStorageAccountName)"
-    Write-Host "----------------------------" -ForegroundColor Green
-
-    # Prompt for confirmation
-    $confirmation = Read-Host "`nProceed with this configuration? (y/N)"
-    
-    if ($confirmation -ne "y" -and $confirmation -ne "Y") {
-        Write-Host "Bootstrap operation cancelled." -ForegroundColor Yellow
-        return $null
-    }
 
     return $defaults
 }

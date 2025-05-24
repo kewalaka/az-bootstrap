@@ -29,8 +29,7 @@ function New-AzBicepDeployment {
     throw "Bicep template file not found at '$bicepTemplateFile'."
   }
   $resolvedBicepTemplateFile = Resolve-Path $bicepTemplateFile -ErrorAction Stop
-
-  Write-Host "[az-bootstrap] This may take a few minutes, please wait..."
+  Write-BootstrapLog "This may take a few minutes, please wait..."
 
   $bicepParams = @{
     resourceGroupName                = $ResourceGroupName
@@ -57,9 +56,8 @@ function New-AzBicepDeployment {
     '--parameters'
   )
   $azCliArgs += $activeBicepParams
-
-  Write-Host "[az-bootstrap] Creating Azure infrastructure via deployment stack '$stackName'..."
-  Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
+  Write-BootstrapLog "Creating Azure infrastructure via deployment stack '$stackName'..."
+  Write-Verbose "Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
   $stderrfile = New-TemporaryFile
   $process = Start-Process "az" -ArgumentList $azCliArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stdoutfile -RedirectStandardError $stderrfile
@@ -68,9 +66,9 @@ function New-AzBicepDeployment {
   Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
 
   if ($process.ExitCode -ne 0) {
-    Write-Error "[az-bootstrap] Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
-    Write-Error "[az-bootstrap] Standard Error: $stderr"
-    Write-Error "[az-bootstrap] Standard Output (may contain JSON error from Azure): $stdout"
+    Write-BootstrapLog "Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)" -Level Error
+    Write-BootstrapLog "Standard Error: $stderr" -Level Error
+    Write-BootstrapLog "Standard Output (may contain JSON error from Azure): $stdout" -Level Error
     throw "Stack deployment for environment '$EnvironmentName' failed."
   }
 
