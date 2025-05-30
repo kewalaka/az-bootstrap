@@ -46,7 +46,7 @@ function Start-AzBootstrapInteractiveMode {
 
     # Resource Group
     $defaultResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($defaults.ResourceGroupName)) {
-        $resourceGroupName
+        $defaults.ResourceGroupName
     }
     else {
         "rg-$($defaults.TargetRepoName)-$initialEnv"

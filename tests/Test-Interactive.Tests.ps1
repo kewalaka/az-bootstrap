@@ -4,6 +4,7 @@ Describe "Start-AzBootstrapInteractiveMode" {
         . "$PSScriptRoot/../private/Start-AzBootstrapInteractiveMode.ps1"
         . "$PSScriptRoot/../private/Test-StorageAccountName.ps1"
         . "$PSScriptRoot/../private/Get-ManagedIdentityName.ps1"
+        . "$PSScriptRoot/../private/Write-BootstrapLog.ps1"
 
         # Mock Write-Host and Test-StorageAccountName
         Mock Write-Host {}
