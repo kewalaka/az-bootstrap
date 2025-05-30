@@ -1,11 +1,4 @@
-name: AzBootstrap Integration Test
-
-# This workflow runs an end-to-end integration test of the az-bootstrap module
-# It can be triggered manually and requires the following secrets to be configured:
-#   - AZURE_CLIENT_ID: The client ID of a service principal with permissions to create resources
-#   - AZURE_TENANT_ID: The tenant ID of the Azure subscription
-#   - AZURE_SUBSCRIPTION_ID: The ID of the Azure subscription
-#   - GH_TOKEN: A GitHub token with permissions to create repositories
+name: Integration Test
 
 on:
   workflow_dispatch:
@@ -14,7 +7,6 @@ on:
 permissions:
   id-token: write # Required for Azure login with OIDC
   contents: read  # Required to checkout code
-  packages: read  # Required for package access
 
 jobs:
   integration-test:

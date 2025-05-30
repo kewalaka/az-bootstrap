@@ -43,7 +43,10 @@ $timestamp = Get-Date -Format "yyyyMMdd"
 $resourcePrefix = "azb-test"
 $repoName = "$resourcePrefix-$timestamp-$randomSuffix"
 $rgName = "rg-$repoName"
-$resourceLocation = "eastus" # Default location, could be parameterized
+$resourceLocation = "newzealandnorth" # Default location, could be parameterized
+$planMIName = "mi-$repoName-dev-plan"
+$applyMIName = "mi-$repoName-dev-apply"
+$storageAccountName = "st$($randomSuffix.ToLower())"
 
 # Store test details in a state file for cleanup
 $stateFile = Join-Path $scriptPath "integration-test-state.json"
@@ -75,13 +78,15 @@ function Invoke-TestSetup {
         }
         
         # Call az-bootstrap with required parameters
-        # Note: -Confirm:$false is used for non-interactive mode
         $params = @{
             TemplateRepoUrl = "https://github.com/kewalaka/terraform-azure-starter-template"
             TargetRepoName = $repoName
             ResourceGroupName = $rgName
             Location = $resourceLocation
-            Confirm = $false
+            PlanManagedIdentityName = $planMIName
+            ApplyManagedIdentityName = $applyMIName
+            TerraformStateStorageAccountName = $storageAccountName # Uncomment to test storage account creation
+            SkipConfirmation = $true
         }
         
         Write-Host "Calling Invoke-AzBootstrap with parameters:" -ForegroundColor Cyan
@@ -131,15 +136,51 @@ function Invoke-TestSetup {
             if ($rgExists) {
                 Write-Host "Resource group '$rgName' created successfully" -ForegroundColor Green
                 
-                # Check for managed identities
+                # Check for managed identities with expected names
                 Write-Host "Checking managed identities..."
-                $identities = az identity list --resource-group $rgName --query "[].name" -o tsv 2>$null
+                $identities = az identity list --resource-group $rgName --query "[].{name:name, principalId:principalId}" -o json 2>$null | ConvertFrom-Json
+
                 if ($identities) {
-                    Write-Host "Found managed identities: $identities" -ForegroundColor Green
+                    $planMI = $identities | Where-Object { $_.name -eq $planMIName }
+                    $applyMI = $identities | Where-Object { $_.name -eq $applyMIName }
+                    
+                    if ($planMI -and $applyMI) {
+                        Write-Host "✅ Found both plan MI ($planMIName) and apply MI ($applyMIName)" -ForegroundColor Green
+                    } else {
+                        if (-not $planMI) { Write-Warning "❌ Plan MI not found: $planMIName" }
+                        if (-not $applyMI) { Write-Warning "❌ Apply MI not found: $applyMIName" }
+                    }
+                } else {
+                    Write-Warning "❌ No managed identities found in resource group"
                 }
-                else {
-                    Write-Warning "No managed identities found in resource group"
+
+                # Check for deployment stack
+                Write-Host "Checking deployment stack..."
+                $deploymentStack = az stack sub list --query "[?contains(name, '$repoName')].name" -o tsv 2>$null
+
+                if ($deploymentStack) {
+                    Write-Host "✅ Found deployment stack: $deploymentStack" -ForegroundColor Green
+                    # Store stack name in state file for cleanup
+                    $state.DeploymentStackName = $deploymentStack
+                } else {
+                    Write-Warning "❌ No deployment stack found for $repoName"
                 }
+
+                # Check storage account if we specified one
+                if ($params.ContainsKey("TerraformStateStorageAccountName")) {
+                    Write-Host "Checking storage account..."
+                    $storageAccount = az storage account show --name $storageAccountName --resource-group $rgName --query name -o tsv 2>$null
+                    
+                    if ($storageAccount -eq $storageAccountName) {
+                        Write-Host "✅ Found storage account: $storageAccountName" -ForegroundColor Green
+                    } else {
+                        Write-Warning "❌ Storage account not found: $storageAccountName"
+                    }
+                }
+            }
+            else {
+                Write-Warning "❌ Resource group '$rgName' does not exist or was not created"
+                $rgExists = $false
             }
         }
         catch {
@@ -210,30 +251,61 @@ function Invoke-TestCleanup {
             $errors += "Error during repository deletion check: $_"
             Write-Warning $errors[-1]
         }
-        
-        # Delete the Azure resource group using Azure CLI
-        Write-Host "Deleting Azure resource group..." -ForegroundColor Yellow
-        try {
-            $rgExists = az group exists --name $state.ResourceGroupName | ConvertFrom-Json
-            
-            if ($rgExists) {
-                Write-Host "Resource group exists, deleting..."
-                $rgDeleteResult = az group delete --name $state.ResourceGroupName --yes --no-wait 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "Resource group deletion initiated successfully" -ForegroundColor Green
+
+        # use stack deletion when possible
+        if ($state.DeploymentStackName) {
+            Write-Host "Deleting Azure deployment stack..." -ForegroundColor Yellow
+            try {
+                $stackExists = az stack sub show --name $state.DeploymentStackName 2>$null
+                
+                if ($stackExists) {
+                    Write-Host "Deployment stack exists, deleting..."
+                    $stackDeleteResult = az stack sub delete --name $state.DeploymentStackName --yes 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "Deployment stack deletion initiated successfully" -ForegroundColor Green
+                        # Since stack deletion removes all resources, we can skip RG deletion
+                        $skipRGDeletion = $true
+                    } else {
+                        $errors += "Failed to delete deployment stack: $stackDeleteResult"
+                        Write-Warning $errors[-1]
+                    }
                 } else {
-                    $errors += "Failed to delete resource group: $rgDeleteResult"
-                    Write-Warning $errors[-1]
+                    Write-Host "Deployment stack doesn't exist, falling back to resource group deletion"
                 }
-            } else {
-                Write-Host "Resource group doesn't exist, skipping deletion"
+            }
+            catch {
+                $errors += "Error during deployment stack deletion: $_"
+                Write-Warning $errors[-1]
+                Write-Host "Falling back to resource group deletion..."
             }
         }
-        catch {
-            $errors += "Error during resource group deletion: $_"
-            Write-Warning $errors[-1]
+
+        # Only delete RG if stack deletion was not successful
+        if (-not $skipRGDeletion) {        
+            # Delete the Azure resource group using Azure CLI
+            Write-Host "Deleting Azure resource group..." -ForegroundColor Yellow
+            try {
+                $rgExists = az group exists --name $state.ResourceGroupName | ConvertFrom-Json
+                
+                if ($rgExists) {
+                    Write-Host "Resource group exists, deleting..."
+                    $rgDeleteResult = az group delete --name $state.ResourceGroupName --yes --no-wait 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "Resource group deletion initiated successfully" -ForegroundColor Green
+                    } else {
+                        $errors += "Failed to delete resource group: $rgDeleteResult"
+                        Write-Warning $errors[-1]
+                    }
+                } else {
+                    Write-Host "Resource group doesn't exist, skipping deletion"
+                }
+            }
+            catch {
+                $errors += "Error during resource group deletion: $_"
+                Write-Warning $errors[-1]
+            }
         }
-        
+
         # Clean up state file if everything succeeded
         if ($errors.Count -eq 0) {
             Remove-Item $stateFile -Force
