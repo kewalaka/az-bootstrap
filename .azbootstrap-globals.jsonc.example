@@ -1,6 +1,6 @@
 {
     // Example global configuration file for az-bootstrap
-    // Place this file at ~/.az-bootstrap.jsonc to use template aliases
+    // Place this file at ~/.azbootstrap-globals.jsonc to use template aliases
     
     "templateAliases": {
         // Common template repositories

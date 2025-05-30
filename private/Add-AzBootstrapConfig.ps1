@@ -45,7 +45,7 @@ function Add-AzBootstrapConfig {
             # Write updated config back to file
             $configContent | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath
             
-            Write-Host "[az-bootstrap] Updated configuration file at $ConfigPath"
+            Write-BootstrapLog "Updated configuration file at $ConfigPath" -Level Success
         } else {
             # File doesn't exist, create new config file with schema
             $newConfig = [PSCustomObject]@{
@@ -64,7 +64,7 @@ function Add-AzBootstrapConfig {
             # Write to file
             $newConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath
             
-            Write-Host "[az-bootstrap] Created new configuration file at $ConfigPath"
+            Write-BootstrapLog "Created new configuration file at $ConfigPath" -Level Success
         }
         
         return $true

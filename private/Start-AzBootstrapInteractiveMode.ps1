@@ -6,34 +6,36 @@ function Start-AzBootstrapInteractiveMode {
         [hashtable]$defaults
     )
 
-    Write-Host "`n[az-bootstrap] Interactive Mode - Enter required values or press Enter to accept defaults`n" -ForegroundColor Cyan
+    Write-Host "`n" -NoNewline
+    Write-BootstrapLog "Interactive Mode - Enter required values or press Enter to accept defaults`n"
 
     # Determine initial environment from defaults
     $initialEnv = $defaults.InitialEnvironmentName
 
-    # Prompt for template repo URL - no default as this is unique per project
-    $templateRepoUrl = Read-Host "Enter Template Repository URL"
+    # Prompt for template repo URL
+    $templateRepoUrl = Read-Host "Enter Template Repository URL [kewalaka/terraform-azure-starter-template]"
     if ([string]::IsNullOrWhiteSpace($templateRepoUrl)) {
-        Write-Host "Template Repository URL is required." -ForegroundColor Red
-        $templateRepoUrl = Read-Host "Enter Template Repository URL"
-        if ([string]::IsNullOrWhiteSpace($templateRepoUrl)) {
-            throw "Template Repository URL is required to proceed."
-        }
+        $templateRepoUrl = "kewalaka/terraform-azure-starter-template"
     }
     $defaults.TemplateRepoUrl = $templateRepoUrl
 
     # Prompt for Target Repository Name
-    $targetRepoName = Read-Host "Enter Target Repository Name [$($defaults.TargetRepoName)]"
-    if ([string]::IsNullOrWhiteSpace($targetRepoName)) {
-        $targetRepoName = $defaults.TargetRepoName
-    }
+    do {
+        $targetRepoName = Read-Host "Enter Target Repository Name [$($defaults.TargetRepoName)]"
+        if ([string]::IsNullOrWhiteSpace($targetRepoName)) {
+            $targetRepoName = $defaults.TargetRepoName
+        }
+        if ([string]::IsNullOrWhiteSpace($targetRepoName)) {
+            Write-Host "Target Repository Name cannot be empty."
+        } 
+    } while ([string]::IsNullOrWhiteSpace($targetRepoName))
     $defaults.TargetRepoName = $targetRepoName
 
     # Default storage account name
     $randomPadding = Get-Random -Minimum 100 -Maximum 999
-    $storageDefault = "st$($defaults.TargetRepoName)$initialEnv$randomPadding" -replace '[^a-z0-9]', ''
-    if ($storageDefault.Length -gt 24) { $storageDefault = $storageDefault.Substring(0,24) }
-    $defaults.TerraformStateStorageAccountName = $storageDefault
+    $defaultStorageAccountName = "st$($defaults.TargetRepoName)$initialEnv$randomPadding" -replace '[^a-z0-9]', ''
+    if ($defaultStorageAccountName.Length -gt 24) { $defaultStorageAccountName = $defaultStorageAccountName.Substring(0,24) }
+    $defaults.TerraformStateStorageAccountName = $defaultStorageAccountName
 
     # Azure Location
     $location = Read-Host "Enter Azure Location [$($defaults.Location)]"
@@ -43,9 +45,15 @@ function Start-AzBootstrapInteractiveMode {
     $defaults.Location = $location
 
     # Resource Group
-    $resourceGroupName = Read-Host "Enter Resource Group Name [$($defaults.ResourceGroupName)]"
+    $defaultResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($defaults.ResourceGroupName)) {
+        $resourceGroupName
+    }
+    else {
+        "rg-$($defaults.TargetRepoName)-$initialEnv"
+    }    
+    $resourceGroupName = Read-Host "Enter Resource Group Name [$defaultResourceGroupName]"
     if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
-        $resourceGroupName = $defaults.ResourceGroupName
+        $resourceGroupName = $defaultResourceGroupName
     }
     $defaults.ResourceGroupName = $resourceGroupName
 
@@ -71,14 +79,13 @@ function Start-AzBootstrapInteractiveMode {
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
 
     # Do you want a Terraform state storage account? (default yes)
-    $useTerraformStorage = Read-Host "Would you like to create a Terraform State Storage Account? [y/n]"
+    $useTerraformStorage = Read-Host "Would you like to create a Terraform State Storage Account? [Y/n]"
     if ([string]::IsNullOrWhiteSpace($useTerraformStorage)) { $useTerraformStorage = 'y' }
     if ($useTerraformStorage -match '^[yY]$') {
         do {
-            $storageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)] (leave blank to skip)"
+            $storageAccountName = Read-Host "Enter Terraform State Storage Account Name [$($defaults.TerraformStateStorageAccountName)]"
             if ([string]::IsNullOrWhiteSpace($storageAccountName)) {
-                $storageAccountName = $null
-                break
+                $storageAccountName = $defaults.TerraformStateStorageAccountName
             }
             $valid = Test-StorageAccountName -StorageAccountName $storageAccountName
         } while (-not $valid)
@@ -86,6 +93,8 @@ function Start-AzBootstrapInteractiveMode {
     } else {
         $defaults.TerraformStateStorageAccountName = $null
     }
+
+    Write-Host "`n" -NoNewline
 
     return $defaults
 }

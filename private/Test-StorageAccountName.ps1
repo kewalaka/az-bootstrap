@@ -11,9 +11,9 @@ function Test-StorageAccountName {
     }
 
     # Check availability via Azure CLI
-    $availability = Test-AzStorageAccountNameAvailability -StorageAccountName $StorageAccountName
-    if (-not $availability.IsValid) {
-        throw "Storage account name '$StorageAccountName' is not available: $($availability.Reason)"
+    $azResult = az storage account check-name --name $StorageAccountName --output json 2>$null | ConvertFrom-Json
+    if (-not $azResult.nameAvailable) {
+        throw "Storage account name '$StorageAccountName' is not available: $($azResult.message)"
     }
 
     return $true

@@ -3,7 +3,7 @@ function Get-AzBootstrapConfig {
     param()
     
     # Determine config file path based on OS
-    $configFileName = ".az-bootstrap.jsonc"
+    $configFileName = ".azbootstrap-globals.jsonc"
     if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5) {
         $configPath = Join-Path $env:USERPROFILE $configFileName
     } else {

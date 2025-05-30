@@ -88,8 +88,7 @@ function New-GitHubBranchRuleset {
     }
     try {
         Invoke-GitHubCliCommand -Command $rulesetCmd | Out-Null
-        Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-        Write-Host "Ruleset '$RulesetName' $actionMessage and enforced on the default branch."
+        Write-BootstrapLog "Ruleset '$RulesetName' $actionMessage and enforced on the default branch." -Level Success -NoPrefix
         return $true
     }
     catch {

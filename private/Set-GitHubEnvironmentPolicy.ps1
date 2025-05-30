@@ -8,7 +8,7 @@ function Set-GitHubEnvironmentPolicy {
         [string[]]$TeamReviewers = @(),
         [bool]$AddOwnerAsReviewer = $false
     )
-    Write-BootstrapLog "Setting deployment branch policy on environment '$EnvironmentName'..."
+    Write-Bootstraplog "Setting deployment branch policy on environment '$EnvironmentName'..."
     
     $userList = $UserReviewers
     if ($AddOwnerAsReviewer -and $Owner) {
@@ -24,7 +24,7 @@ function Set-GitHubEnvironmentPolicy {
     )
     
     Invoke-GitHubApiCommand -Method "PUT" -Endpoint "/repos/$Owner/$Repo/environments/$EnvironmentName" -AdditionalArgs $additionalArgs | Out-Null
-    Write-BootstrapLog "Reviewers set for '$EnvironmentName'." -Level Success
+    Write-Bootstraplog "Reviewers set for '$EnvironmentName'." -Level Success
 }
 
 

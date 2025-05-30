@@ -29,7 +29,7 @@ function New-AzBicepDeployment {
     throw "Bicep template file not found at '$bicepTemplateFile'."
   }
   $resolvedBicepTemplateFile = Resolve-Path $bicepTemplateFile -ErrorAction Stop
-  Write-BootstrapLog "This may take a few minutes, please wait..."
+  Write-Bootstraplog "This may take a few minutes, please wait..."
 
   $bicepParams = @{
     resourceGroupName                = $ResourceGroupName
@@ -56,7 +56,7 @@ function New-AzBicepDeployment {
     '--parameters'
   )
   $azCliArgs += $activeBicepParams
-  Write-BootstrapLog "Creating Azure infrastructure via deployment stack '$stackName'..."
+  Write-Bootstraplog "Creating Azure infrastructure via deployment stack '$stackName'..."
   Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
   $stderrfile = New-TemporaryFile
@@ -66,9 +66,9 @@ function New-AzBicepDeployment {
   Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
 
   if ($process.ExitCode -ne 0) {
-    Write-BootstrapLog "Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)" -Level Error
-    Write-BootstrapLog "Standard Error: $stderr" -Level Error
-    Write-BootstrapLog "Standard Output (may contain JSON error from Azure): $stdout" -Level Error
+    Write-Bootstraplog "Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)" -Level Error
+    Write-Bootstraplog "Standard Error: $stderr" -Level Error
+    Write-Bootstraplog "Standard Output (may contain JSON error from Azure): $stdout" -Level Error
     throw "Stack deployment for environment '$EnvironmentName' failed."
   }
 
@@ -101,8 +101,7 @@ function New-AzBicepDeployment {
     $friendlyDuration = "."
   }
   
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration
+  Write-BootstrapLog "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration -Level Success -NoPrefix
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
 

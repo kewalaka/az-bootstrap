@@ -24,7 +24,7 @@ function Write-BootstrapLog {
             Write-Error "$prefix$Message"
         }
         default {
-            Write-Host "$prefix$Message"
+            Write-Host "$prefix$Message" -ForegroundColor Cyan
         }
     }
 }

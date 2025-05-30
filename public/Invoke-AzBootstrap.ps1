@@ -56,6 +56,10 @@ function Invoke-AzBootstrap {
             $Location = $config.defaultLocation
             Write-Verbose "Using default location '$Location' from config file."
         }
+        else {
+            $Location = "australiaeast"
+            Write-Verbose "No location specified, using default '$Location'."
+        }
     }
 
     #region:check parameters
@@ -63,12 +67,12 @@ function Invoke-AzBootstrap {
     $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
                           [string]::IsNullOrWhiteSpace($TargetRepoName) -or 
                           [string]::IsNullOrWhiteSpace($Location)
-    
+
     if ($isInteractiveMode) {
         Write-Verbose "[az-bootstrap] No required parameters provided, entering interactive mode."
         # Prepare defaults for interactive mode
         $defaults = @{ 
-            $InitialEnvironmentName = $InitialEnvironmentName
+            InitialEnvironmentName            = $InitialEnvironmentName
             TemplateRepoUrl                   = $TemplateRepoUrl
             TargetRepoName                    = $TargetRepoName
             Location                          = $Location
@@ -90,7 +94,7 @@ function Invoke-AzBootstrap {
     }
     else
     {
-        # in the non-interactive mode, we still need to infer the defaults
+        # set up the defaults
         $ResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
             $ResourceGroupName
         }
@@ -104,6 +108,7 @@ function Invoke-AzBootstrap {
         $initialPlanEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'plan'
         $initialApplyEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'apply'
 
+        # interactive mode checks this during user input
         if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
             Test-StorageAccountName -StorageAccountName $TerraformStateStorageAccountName
         }
@@ -120,7 +125,7 @@ function Invoke-AzBootstrap {
     #endregion
 
     #region: check CLI tools
-    Write-Host "[az-bootstrap] Checking GitHub CLI authentication status..."
+    Write-BootstrapLog "Checking GitHub CLI authentication status..."
     if (-not (Test-GitHubCLI)) {
         throw "GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
     }
@@ -136,6 +141,7 @@ function Invoke-AzBootstrap {
     #endregion
 
     # GitHub repo
+    $TemplateRepoUrl = Resolve-TemplateRepoUrl -TemplateRepoUrl $TemplateRepoUrl
     $ownerArg = if ($GitHubOwner) { "--owner $GitHubOwner" } else { "" }
     $visibilityArg = switch ($GitHubVisibility) {
         "private" { "--private" }
@@ -151,13 +157,13 @@ function Invoke-AzBootstrap {
     }
 
     # Check if the resource group already exists
-    Write-Host "[az-bootstrap] Checking if Azure resource group '$ResourceGroupName' already exists..."
+    Write-BootstrapLog "Checking if Azure resource group '$ResourceGroupName' already exists..."
     if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
         throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
     }
     
     # Check if the GitHub repository already exists
-    Write-Host "[az-bootstrap] Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
+    Write-BootstrapLog "Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
     if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $TargetRepoName) {
         throw "GitHub repository '$actualOwner/$TargetRepoName' already exists. Please choose a different name."
     }
@@ -165,12 +171,12 @@ function Invoke-AzBootstrap {
     if (-not $SkipConfirmation) {
         Write-Host "`n--- Configuration Summary ---" -ForegroundColor Green
         Write-Host "Template Repository URL      : $TemplateRepoUrl"
-        Write-Host "Target Repository Name       : $TargetRepoName"
+        Write-Host "Target Repository            : $actualOwner/$TargetRepoName"
         Write-Host "Azure Location               : $Location"
         Write-Host "Resource Group Name          : $ResourceGroupName"
         Write-Host "Plan Managed Identity Name   : $PlanManagedIdentityName"
         Write-Host "Apply Managed Identity Name  : $ApplyManagedIdentityName"
-        Write-Host "Terraform State Storage Name : $TerraformStateStorageAccountName"
+        Write-Host "Terraform State Storage Name : $($TerraformStateStorageAccountName -eq '' ? 'Not required' : $TerraformStateStorageAccountName)"
         Write-Host "----------------------------`n" -ForegroundColor Green
 
         $confirm = Read-Host "Proceed with bootstrap? (y/N)"
@@ -183,7 +189,7 @@ function Invoke-AzBootstrap {
     #
     # end checks - now we start making things
     #
-    Write-Host "[az-bootstrap] Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
+    Write-BootstrapLog "Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
     $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
     Invoke-Expression $cmd
     if ($LASTEXITCODE -ne 0) {
@@ -191,7 +197,7 @@ function Invoke-AzBootstrap {
     }
 
     $repoUrl = "https://github.com/$actualOwner/$TargetRepoName.git"
-    Write-Host "[az-bootstrap] Cloning new repo '$actualOwner/$TargetRepoName' to $TargetDirectory"
+    Write-BootstrapLog "Cloning new repo '$actualOwner/$TargetRepoName' to $TargetDirectory"
     git clone $repoUrl $TargetDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to clone new repository from $repoUrl."
@@ -204,7 +210,7 @@ function Invoke-AzBootstrap {
             throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide the -Owner parameter."
         }
 
-        Write-Host "[az-bootstrap] Setting up branch protection for '$($RepoInfo.Owner)/$($RepoInfo.Repo)' on branch '$ProtectedBranchName'..."
+        Write-BootstrapLog "Setting up branch protection for '$($RepoInfo.Owner)/$($RepoInfo.Repo)' on branch '$ProtectedBranchName'..."
         New-GitHubBranchRuleset -Owner $RepoInfo.Owner `
             -Repo $RepoInfo.Repo `
             -RulesetName "default-branch-protection" `
@@ -217,7 +223,7 @@ function Invoke-AzBootstrap {
             -AllowedMergeMethods $BranchAllowedMergeMethods `
             -EnableCopilotReview $BranchEnableCopilotReview        
         
-        Write-Host "[az-bootstrap] Creating initial environment '$InitialEnvironmentName'..."
+        Write-BootstrapLog "Creating initial environment '$InitialEnvironmentName'..."
         $addEnvParams = @{
             EnvironmentName                  = $InitialEnvironmentName
             ResourceGroupName                = $ResourceGroupName
@@ -248,9 +254,9 @@ function Invoke-AzBootstrap {
         Pop-Location
     }
 
-    Write-Host "[az-bootstrap] Repository  : 'https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
-    Write-Host "[az-bootstrap] ...cloned to: '$($TargetDirectory)'."
-    Write-Host "[az-bootstrap] Azure Bootstrap complete. 🎉"
+    Write-BootstrapLog "Repository  : 'https://github.com/$($RepoInfo.Owner)/$($RepoInfo.Repo)'."
+    Write-BootstrapLog "...cloned to: '$($TargetDirectory)'."
+    Write-BootstrapLog "Azure Bootstrap complete. 🎉"
 }
 
 Export-ModuleMember -Function Invoke-AzBootstrap

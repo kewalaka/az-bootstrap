@@ -6,5 +6,5 @@ function New-GitHubEnvironment {
         [Parameter(Mandatory)][string]$EnvironmentName
     )
     Invoke-GitHubApiCommand -Method "PUT" -Endpoint "/repos/$Owner/$Repo/environments/$EnvironmentName" | Out-Null
-    Write-BootstrapLog "Environment '$EnvironmentName' created/updated in $Owner/$Repo." -Level Success
+    Write-Bootstraplog "Environment '$EnvironmentName' created/updated in $Owner/$Repo." -Level Success
 }

@@ -46,9 +46,9 @@ function Add-AzBootstrapEnvironment {
 
   # Check storage account name if provided
   if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
-    $storageAccountValidation = Test-AzStorageAccountNameAvailability -StorageAccountName $TerraformStateStorageAccountName
-    if (-not $storageAccountValidation.IsValid) {
-      throw "Storage account validation failed: $($storageAccountValidation.Reason)"
+    $storageAccountValidation = Test-AzStorageAccountName -StorageAccountName $TerraformStateStorageAccountName
+    if (-not $storageAccountValidation) {
+      throw "A valid storage account is required."
     }
   }
 
@@ -68,7 +68,7 @@ function Add-AzBootstrapEnvironment {
   }
 
   # Check if the resource group already exists
-  Write-Host "[az-bootstrap] Checking if Azure resource group '$ResourceGroupName' already exists..."
+  Write-BootstrapLog "Checking if Azure resource group '$ResourceGroupName' already exists..."
   if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
     throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
   }
@@ -98,14 +98,14 @@ function Add-AzBootstrapEnvironment {
       "TF_STATE_RESOURCE_GROUP_NAME"  = $ResourceGroupName
       "TF_STATE_STORAGE_ACCOUNT_NAME" = $TerraformStateStorageAccountName
     }
-  }  Write-BootstrapLog "Configuring GitHub environment '$actualPlanEnvName'..."
+  }  Write-Bootstraplog "Configuring GitHub environment '$actualPlanEnvName'..."
   # Create/update environment and set secrets
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
   foreach ($key in $secrets.Keys) {
     Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName -Secrets @{$key=$secrets[$key]} 
   }
 
-  Write-BootstrapLog "Configuring GitHub environment '$actualApplyEnvName'..."
+  Write-Bootstraplog "Configuring GitHub environment '$actualApplyEnvName'..."
   # Create/update environment and set secrets
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
   foreach ($key in $secrets.Keys) {
@@ -121,9 +121,7 @@ function Add-AzBootstrapEnvironment {
     -TeamReviewers $ApplyEnvironmentTeamReviewers `
     -AddOwnerAsReviewer $AddOwnerAsReviewer 
 
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "[az-bootstrap] GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
-
+  Write-BootstrapLog "GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully." -Level Success
   
   $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
