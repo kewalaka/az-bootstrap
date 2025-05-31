@@ -114,6 +114,9 @@ You can add or remove environments using:
 ```pwsh
 # Add a new environment (e.g., 'test')
 Add-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
+
+# Remove an environment (e.g., 'test')
+Remove-AzBootstrapEnvironment -EnvironmentName "test"
 ```
 
 Adding an environment will:
@@ -125,6 +128,13 @@ Adding an environment will:
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
 - Optionally configure deployment reviewers and branch protection for the environment
 - Update the `.azbootstrap.jsonc` file with details about the new environment
+
+Removing an environment will:
+
+- Delete the GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") from the target repository
+- Remove the Azure deployment stack, which automatically deletes the resource group and all associated resources (managed identities, role assignments, etc.)
+- Remove the environment entry from the `.azbootstrap.jsonc` file
+- Support interactive mode to select from available environments if no environment name is provided
 
 ### Complete Example
 
