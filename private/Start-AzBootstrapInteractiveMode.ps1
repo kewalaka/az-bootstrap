@@ -89,6 +89,7 @@ function Start-AzBootstrapInteractiveMode {
             if ([string]::IsNullOrWhiteSpace($storageAccountName)) {
                 $storageAccountName = $defaults.TerraformStateStorageAccountName
             }
+            Write-BootstrapLog "Checking if Storage Account '$storageAccountName' is valid and available..."
             $valid = Test-AzStorageAccountName -StorageAccountName $storageAccountName
         } while (-not $valid)
         $defaults.TerraformStateStorageAccountName = $storageAccountName

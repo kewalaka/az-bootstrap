@@ -9,7 +9,19 @@ adding support for managed identities (via OIDC), and the creation of GitHub env
 
 You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 
-![alt text](./images/az-bootstrap.gif)
+## Interactive mode
+
+Use `Invoke-AzBootstrap` (or the alias, `iazb`) without inputs for interactive mode:
+
+![illustration of Az-Boostrap running with interactive inputs](./images/az-bootstrap-interactive.gif)
+
+## Non-interactive mode
+
+You can alternatively supply parameters in which case it runs non-interactively
+
+![Illustration of Az-Bootstrap running without prompting for input](./images/az-bootstrap.gif)
+
+Please note: as of v0.5 `-SkipConfirmation $true` needs to be added to the parameters to bypass the prompt.
 
 ## What does it do?
 
