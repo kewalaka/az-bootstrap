@@ -112,9 +112,21 @@ The above will set up for a `dev` environment by default (name set by `InitialEn
 You can add or remove environments using:
 
 ```pwsh
-# Add a new environment (e.g., 'test')
-Add-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth"
+# Interactive mode - prompts for missing parameters
+Add-AzBootstrapEnvironment -EnvironmentName "test"
+
+# Non-interactive mode with all parameters
+Add-AzBootstrapEnvironment -EnvironmentName "test" -ResourceGroupName "rg-my-new-demo-test-nzn" -Location "newzealandnorth" -PlanManagedIdentityName "mi-myapp-test-plan" -SkipConfirmation
+
+# Uses existing project configuration and interactive prompts for missing values
+Add-AzBootstrapEnvironment -EnvironmentName "prod" -Location "eastus"
 ```
+
+The `Add-AzBootstrapEnvironment` function now supports:
+
+- **Interactive mode**: When run with minimal parameters, it will prompt for missing values with intelligent defaults derived from your existing project configuration
+- **SkipConfirmation**: Use `-SkipConfirmation` to bypass the confirmation prompt (useful for automation)
+- **Configuration defaults**: Automatically reads from the repository's `.azbootstrap.jsonc` file to suggest appropriate defaults based on your existing environments
 
 Adding an environment will:
 
@@ -204,20 +216,18 @@ $params = @{
 # Initial bootstrap
 Invoke-AzBootstrap @params
 
-# Add a new environment (e.g., 'test')
+# Add a new environment with interactive mode (prompts for missing values)
+Add-AzBootstrapEnvironment -EnvironmentName "test"
+
+# Or, add a new environment non-interactively
 Add-AzBootstrapEnvironment `
     -EnvironmentName "test" `
-    -ResourceGroupName "rg-$name-$environment-nzn" `
+    -ResourceGroupName "rg-$name-test-nzn" `
     -Location "australiaeast" `
-    -PlanManagedIdentityName "mi-$name-$environment-nzn-plan" `
-    -ApplyManagedIdentityName "mi-$name-$environment-nzn-apply" `
-    -Owner "my-org-or-user" `
-    -Repo "$name" `
-    -PlanEnvName "$environment-iac-plan" `
-    -ApplyEnvName "$environment-iac-apply" `
-    -ArmTenantId $env:ARM_TENANT_ID `
-    -ArmSubscriptionId $env:ARM_SUBSCRIPTION_ID `
-    -ApplyEnvironmentUserReviewers @("reviewer1", "reviewer2")
+    -PlanManagedIdentityName "mi-$name-test-nzn-plan" `
+    -ApplyManagedIdentityName "mi-$name-test-nzn-apply" `
+    -ApplyEnvironmentUserReviewers @("reviewer1", "reviewer2") `
+    -SkipConfirmation
 ```
 
 The above demonstrates how to:
