@@ -56,10 +56,10 @@ This will prompt you for required information with default values provided:
 - Template Repository URL (required)
 - Target Repository Name (required)
 - Azure Location (default: australiaeast)
-- Resource Group Name (default: azb-rg)
-- Plan Managed Identity Name (default: azb-mi-plan)
-- Apply Managed Identity Name (default: azb-mi-apply)
-- Terraform State Storage Account Name (default: azbstorage)
+- Resource Group Name (default: rg-{repo-name}-{initial-environment-name})
+- Plan Managed Identity Name (default: mi-{repo-name}-{initial-environment-name}-plan)
+- Apply Managed Identity Name (default: mi-{repo-name}-{initial-environment-name}-apply)
+- Terraform State Storage Account Name (default: st{repo-name}{initial-environment-name}{padding}, truncated if needed)
 
 After entering all inputs, you'll see a configuration summary and be prompted to confirm before proceeding.
 

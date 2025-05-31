@@ -50,7 +50,7 @@ function New-AzBicepDeployment {
     'stack', 'sub', 'create',
     '--name', $stackName,
     '--location', $Location,
-    '--template-file', $resolvedBicepTemplateFile,
+    '--template-file', """$resolvedBicepTemplateFile""",
     '--action-on-unmanage', 'deleteResources',
     '--deny-settings-mode', 'none',
     '--parameters'

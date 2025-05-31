@@ -73,6 +73,25 @@ function Add-AzBootstrapEnvironment {
     throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
   }
 
+  # Save configuration to .azbootstrap.jsonc at the top level of the repository
+  $environmentConfig = [PSCustomObject]@{
+    EnvironmentName              = $EnvironmentName
+    ResourceGroupName            = $ResourceGroupName
+    DeploymentStackName          = $infraDetails.DeploymentStackName
+    PlanGitHubEnvironmentName    = $actualPlanEnvName
+    ApplyGitHubEnvironmentName   = $actualApplyEnvName
+    TerraformStateStorageAccountName = $TerraformStateStorageAccountName
+  }
+
+  $repoPath = git rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -eq 0 -and $repoPath) {
+    $configPath = Join-Path $repoPath ".azbootstrap.jsonc"
+    Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
+  } else {
+    Write-Warning "Could not determine repository root path. Skipping writing configuration file."
+  }  
+
+  # do the deployment
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
     -ResourceGroupName $ResourceGroupName `
     -Location $Location `
@@ -89,6 +108,7 @@ function Add-AzBootstrapEnvironment {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
   }
 
+  # Create/update environment and set secrets
   $secrets = @{
     "ARM_TENANT_ID"       = $ArmTenantId
     "ARM_SUBSCRIPTION_ID" = $ArmSubscriptionId
@@ -99,14 +119,12 @@ function Add-AzBootstrapEnvironment {
       "TF_STATE_STORAGE_ACCOUNT_NAME" = $TerraformStateStorageAccountName
     }
   }  Write-Bootstraplog "Configuring GitHub environment '$actualPlanEnvName'..."
-  # Create/update environment and set secrets
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
   foreach ($key in $secrets.Keys) {
     Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName -Secrets @{$key=$secrets[$key]} 
   }
 
   Write-Bootstraplog "Configuring GitHub environment '$actualApplyEnvName'..."
-  # Create/update environment and set secrets
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
   foreach ($key in $secrets.Keys) {
     Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName -Secrets @{$key=$secrets[$key]} 
@@ -122,24 +140,6 @@ function Add-AzBootstrapEnvironment {
     -AddOwnerAsReviewer $AddOwnerAsReviewer 
 
   Write-BootstrapLog "GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully." -Level Success
-  
-  $environmentConfig = [PSCustomObject]@{
-    EnvironmentName              = $EnvironmentName
-    ResourceGroupName            = $ResourceGroupName
-    DeploymentStackName          = $infraDetails.DeploymentStackName
-    PlanGitHubEnvironmentName    = $actualPlanEnvName
-    ApplyGitHubEnvironmentName   = $actualApplyEnvName
-    TerraformStateStorageAccountName = $TerraformStateStorageAccountName
-  }
-
-  # Save configuration to .azbootstrap.jsonc if we can determine the repository path
-  $repoPath = git rev-parse --show-toplevel 2>$null
-  if ($LASTEXITCODE -eq 0 -and $repoPath) {
-    $configPath = Join-Path $repoPath ".azbootstrap.jsonc"
-    Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
-  } else {
-    Write-Warning "Could not determine repository root path. Skipping writing configuration file."
-  }
 
   return $environmentConfig
 }
