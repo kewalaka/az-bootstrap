@@ -1,2 +1,4 @@
 playground.ps1
 **/.env
+integration-tests/integration-test-state.json
+integration-tests/azb-test-*

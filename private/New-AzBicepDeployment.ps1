@@ -29,8 +29,7 @@ function New-AzBicepDeployment {
     throw "Bicep template file not found at '$bicepTemplateFile'."
   }
   $resolvedBicepTemplateFile = Resolve-Path $bicepTemplateFile -ErrorAction Stop
-
-  Write-Host "[az-bootstrap] This may take a few minutes, please wait..."
+  Write-Bootstraplog "This may take a few minutes, please wait..."
 
   $bicepParams = @{
     resourceGroupName                = $ResourceGroupName
@@ -57,8 +56,7 @@ function New-AzBicepDeployment {
     '--parameters'
   )
   $azCliArgs += $activeBicepParams
-
-  Write-Host "[az-bootstrap] Creating Azure infrastructure via deployment stack '$stackName'..."
+  Write-Bootstraplog "Creating Azure infrastructure via deployment stack '$stackName'..."
   Write-Verbose "[az-bootstrap] Executing: az $($azCliArgs -join ' ')"
   $stdoutfile = New-TemporaryFile
   $stderrfile = New-TemporaryFile
@@ -68,9 +66,9 @@ function New-AzBicepDeployment {
   Remove-Item $stdoutfile, $stderrfile -ErrorAction SilentlyContinue
 
   if ($process.ExitCode -ne 0) {
-    Write-Error "[az-bootstrap] Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)"
-    Write-Error "[az-bootstrap] Standard Error: $stderr"
-    Write-Error "[az-bootstrap] Standard Output (may contain JSON error from Azure): $stdout"
+    Write-Bootstraplog "Stack deployment failed for environment '$EnvironmentName'. Exit Code: $($process.ExitCode)" -Level Error
+    Write-Bootstraplog "Standard Error: $stderr" -Level Error
+    Write-Bootstraplog "Standard Output (may contain JSON error from Azure): $stdout" -Level Error
     throw "Stack deployment for environment '$EnvironmentName' failed."
   }
 
@@ -99,18 +97,19 @@ function New-AzBicepDeployment {
   try {
     $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
     $friendlyDuration = "in {0}m {1}s." -f $ts.Minutes, $ts.Seconds
-  } catch {
+  }
+  catch {
     $friendlyDuration = "."
   }
   
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration
+  Write-BootstrapLog "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState) $friendlyDuration" -Level Success -NoPrefix
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
 
   return [PSCustomObject]@{
     PlanManagedIdentityClientId  = $planManagedIdentityClientId
     ApplyManagedIdentityClientId = $applyManagedIdentityClientId
+    DeploymentStackName          = $stackName
   }
 }
 

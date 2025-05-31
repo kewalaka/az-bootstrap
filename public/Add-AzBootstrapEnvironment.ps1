@@ -31,38 +31,46 @@ function Add-AzBootstrapEnvironment {
 
     [string]$TerraformStateStorageAccountName
   )
+  # Validate required parameters
+  # Validate required parameters
+  if (-not $EnvironmentName -or -not $ResourceGroupName -or -not $Location -or -not $PlanManagedIdentityName) {
+    throw "Parameters 'EnvironmentName', 'ResourceGroupName', 'Location', and 'PlanManagedIdentityName' are required"
+  }
 
-  # Retrieve Azure context (Subscription ID and Tenant ID)
-  # This ensures we have the necessary Azure context, regardless of how this function is called.
+  # Retrieve Azure context (Subscription ID and Tenant ID) if not provided
   if (-not $ArmTenantId -or -not $ArmSubscriptionId) {
     $azContext = Get-AzCliContext # This function handles checks and throws on failure
     $ArmSubscriptionId = $azContext.SubscriptionId
     $ArmTenantId = $azContext.TenantId
   }
 
+  # Check storage account name if provided
+  if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
+    $storageAccountValidation = Test-AzStorageAccountName -StorageAccountName $TerraformStateStorageAccountName
+    if (-not $storageAccountValidation) {
+      throw "A valid storage account is required."
+    }
+  }
+
   $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $GitHubOwner -OverrideRepo $GitHubRepo
   if (-not $RepoInfo) {
     throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide -Owner and -Repo parameters."
   }
-
-  $actualPlanEnvName = if (-not [string]::IsNullOrWhiteSpace($PlanEnvNameOverride)) {
-    $PlanEnvNameOverride
-  }
-  else {
-    "${EnvironmentName}-iac-plan"
-  }
-  $actualApplyEnvName = if (-not [string]::IsNullOrWhiteSpace($ApplyEnvNameOverride)) {
-    $ApplyEnvNameOverride
-  }
-  else {
-    "${EnvironmentName}-iac-apply"
-  }
+  # Determine GitHub environment names
+  $actualPlanEnvName = if (-not [string]::IsNullOrWhiteSpace($PlanEnvNameOverride)) { $PlanEnvNameOverride } else { "$EnvironmentName-iac-plan" }
+  $actualApplyEnvName = if (-not [string]::IsNullOrWhiteSpace($ApplyEnvNameOverride)) { $ApplyEnvNameOverride } else { "$EnvironmentName-iac-apply" }
 
   $ApplyManagedIdentityName = if (-not [string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
     $ApplyManagedIdentityName
   }
   else {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
+  }
+
+  # Check if the resource group already exists
+  Write-BootstrapLog "Checking if Azure resource group '$ResourceGroupName' already exists..."
+  if (Test-AzResourceGroupExists -ResourceGroupName $ResourceGroupName) {
+    throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
   }
 
   $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
@@ -87,30 +95,22 @@ function Add-AzBootstrapEnvironment {
   }
   if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
     $secrets += @{
-      "TFSTATE_RESOURCE_GROUP_NAME"  = $ResourceGroupName
-      "TFSTATE_STORAGE_ACCOUNT_NAME" = $TerraformStateStorageAccountName
+      "TF_STATE_RESOURCE_GROUP_NAME"  = $ResourceGroupName
+      "TF_STATE_STORAGE_ACCOUNT_NAME" = $TerraformStateStorageAccountName
     }
+  }  Write-Bootstraplog "Configuring GitHub environment '$actualPlanEnvName'..."
+  # Create/update environment and set secrets
+  New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
+  foreach ($key in $secrets.Keys) {
+    Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName -Secrets @{$key=$secrets[$key]} 
   }
 
-  Write-Host "[az-bootstrap] Configuring GitHub environment '$actualPlanEnvName'..."
-  New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
-
-  $secrets["ARM_CLIENT_ID"] = $infraDetails.PlanManagedIdentityClientId
-
-  Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner `
-    -Repo $RepoInfo.Repo `
-    -EnvironmentName $actualPlanEnvName `
-    -Secrets $secrets
-
-  Write-Host "[az-bootstrap] Configuring GitHub environment '$actualApplyEnvName'..."
+  Write-Bootstraplog "Configuring GitHub environment '$actualApplyEnvName'..."
+  # Create/update environment and set secrets
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
-
-  $secrets["ARM_CLIENT_ID"] = $infraDetails.ApplyManagedIdentityClientId
-
-  Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner `
-    -Repo $RepoInfo.Repo `
-    -EnvironmentName $actualApplyEnvName `
-    -Secrets $secrets
+  foreach ($key in $secrets.Keys) {
+    Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName -Secrets @{$key=$secrets[$key]} 
+  }
 
 
   # add reviewers to the apply environment
@@ -121,18 +121,27 @@ function Add-AzBootstrapEnvironment {
     -TeamReviewers $ApplyEnvironmentTeamReviewers `
     -AddOwnerAsReviewer $AddOwnerAsReviewer 
 
-  Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-  Write-Host "[az-bootstrap] GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully."
-
+  Write-BootstrapLog "GitHub environments '$actualPlanEnvName' and '$actualApplyEnvName' configured successfully." -Level Success
   
-  return [PSCustomObject]@{
+  $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
     ResourceGroupName            = $ResourceGroupName
+    DeploymentStackName          = $infraDetails.DeploymentStackName
     PlanGitHubEnvironmentName    = $actualPlanEnvName
     ApplyGitHubEnvironmentName   = $actualApplyEnvName
-    PlanManagedIdentityClientId  = $infraDetails.PlanManagedIdentityClientId
-    ApplyManagedIdentityClientId = $infraDetails.ApplyManagedIdentityClientId 
+    TerraformStateStorageAccountName = $TerraformStateStorageAccountName
   }
+
+  # Save configuration to .azbootstrap.jsonc if we can determine the repository path
+  $repoPath = git rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -eq 0 -and $repoPath) {
+    $configPath = Join-Path $repoPath ".azbootstrap.jsonc"
+    Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
+  } else {
+    Write-Warning "Could not determine repository root path. Skipping writing configuration file."
+  }
+
+  return $environmentConfig
 }
 
 Export-ModuleMember -Function Add-AzBootstrapEnvironment

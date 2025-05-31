@@ -28,7 +28,9 @@
 - **Remove-AzBootstrapEnvironment:** Removes an environment.
 - **Install-GitHubCLI:** Ensures GitHub CLI is available.
 - **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
-- **New-GitHubEnvironment/Secrets/Policy:** Manages GitHub environments and policies.
+- **New-GitHubEnvironment:** Creates or updates a GitHub environment.
+- **Set-GitHubEnvironmentSecrets:** Sets secrets for a GitHub environment.
+- **Set-GitHubEnvironmentPolicy:** Configures deployment branch policy.
 
 ## Design Principles
 
@@ -103,6 +105,22 @@ Invoke-Pester -Path ./tests/Test-AddEnvironment.Tests.ps1
 # Test removing an environment
 Invoke-Pester -Path ./tests/Test-RemoveEnvironment.Tests.ps1
 ```
+
+## Create GitHub App for Integration tests
+
+This needs to be under an organisation (a free one is fine), because GitHub Apps in a personal context don't support IAT tokens
+
+- <https://github.com/settings/organizations>
+
+## Release Process
+
+When creating a new release:
+
+1. Update the `ModuleVersion` in `az-bootstrap.psd1` to a higher version than the current one in the PowerShell Gallery.
+2. Create a GitHub release, which will trigger the publish workflow.
+3. The workflow will automatically check if the version number is higher than the previously published version.
+4. If the version number is not higher, the workflow will fail with an error message.
+5. If the version check passes, the module will be uploaded to the PowerShell Gallery.
 
 ---
 

@@ -21,6 +21,39 @@ jobs:
           Import-Module ./az-bootstrap.psd1 -Force
           Invoke-Pester -Path ./tests
 
+      - name: Check Module Version
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          # Get current module version from manifest
+          $moduleManifest = Import-PowerShellDataFile -Path ./az-bootstrap.psd1
+          $currentVersion = $moduleManifest.ModuleVersion
+          Write-Host "Current module version: $currentVersion"
+          
+          try {
+              # Find the latest version on PowerShell Gallery
+              $galleryModule = Find-Module -Name az-bootstrap -Repository PSGallery -ErrorAction Stop
+              $galleryVersion = $galleryModule.Version
+              Write-Host "Latest version on PowerShell Gallery: $galleryVersion"
+              
+              # Compare versions
+              if ([System.Version]$currentVersion -le [System.Version]$galleryVersion) {
+                  Write-Error "Module version $currentVersion is not higher than the latest published version $galleryVersion. Please update the version in az-bootstrap.psd1."
+                  exit 1
+              }
+              
+              Write-Host "✅ Version check passed. Current version $currentVersion is higher than $galleryVersion"
+          }
+          catch {
+              if ($_.Exception.Message -like "*No match was found for the specified search criteria*") {
+                  Write-Host "Module not found in PowerShell Gallery. This appears to be the first publication."
+              }
+              else {
+                  Write-Warning "Error checking PowerShell Gallery: $_"
+                  # Continue anyway since this might be the first publication
+              }
+          }
+
       - name: Publish to PowerShell Gallery
         if: github.event_name == 'release'
         shell: pwsh

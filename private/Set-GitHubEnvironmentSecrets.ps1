@@ -9,7 +9,6 @@ function Set-GitHubEnvironmentSecrets {
     foreach ($key in $Secrets.Keys) {
         $cmd = @("gh", "secret", "set", $key, "--env", $EnvironmentName, "-b", $Secrets[$key])
         Invoke-GitHubCliCommand -Command $cmd | Out-Null
-        Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-        Write-Host "Secret '$key' set for environment '$EnvironmentName'."
+        Write-Bootstraplog "Secret '$key' set for environment '$EnvironmentName'." -Level Success
     }
 }

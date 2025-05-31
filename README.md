@@ -9,7 +9,19 @@ adding support for managed identities (via OIDC), and the creation of GitHub env
 
 You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 
-![alt text](./images/az-bootstrap.gif)
+## Interactive mode
+
+Use `Invoke-AzBootstrap` (or the alias, `iazb`) without inputs for interactive mode:
+
+![illustration of Az-Boostrap running with interactive inputs](./images/az-bootstrap-interactive.gif)
+
+## Non-interactive mode
+
+You can alternatively supply parameters in which case it runs non-interactively
+
+![Illustration of Az-Bootstrap running without prompting for input](./images/az-bootstrap.gif)
+
+Please note: as of v0.5 `-SkipConfirmation $true` needs to be added to the parameters to bypass the prompt.
 
 ## What does it do?
 
@@ -31,6 +43,26 @@ To get you started you need:
 
 ## Usage Examples
 
+### Interactive Mode
+
+For guided setup with sensible defaults, simply run without any parameters:
+
+```pwsh
+Invoke-AzBootstrap
+```
+
+This will prompt you for required information with default values provided:
+
+- Template Repository URL (required)
+- Target Repository Name (required)
+- Azure Location (default: australiaeast)
+- Resource Group Name (default: azb-rg)
+- Plan Managed Identity Name (default: azb-mi-plan)
+- Apply Managed Identity Name (default: azb-mi-apply)
+- Terraform State Storage Account Name (default: azbstorage)
+
+After entering all inputs, you'll see a configuration summary and be prompted to confirm before proceeding.
+
 ### Minimal example
 
 ```powershell
@@ -38,6 +70,8 @@ Install-Module Az-Bootstrap -Scope CurrentUser
 
 $params = @{
   TemplateRepoUrl     = "https://github.com/kewalaka/terraform-azure-starter-template"
+  # Or use GitHub shorthand: "kewalaka/terraform-azure-starter-template"
+  # Or use an alias (if configured): "terraform"
   TargetRepoName      = "my-new-demo"
   Location            = "newzealandnorth"
 }
@@ -51,6 +85,7 @@ The above will:
 - Grants Reader to the plan identity and Contributor + RBAC Administrator (RBAC) roles to the apply managed identity at the resource group level
 - Sets up federated credentials for GitHub environments (defautl naming: "dev-iac-plan" and "dev-iac-apply")
 - Configures GitHub environments, secrets, and branch protection in the new target repository.
+- Creates a `.azbootstrap.jsonc` file in the target repository to track created resources
 - v0.4 - Creates an optional storage account for Terraform state, assigning both identities `Storage Blob Data Contributor`.
 
 Naming conventions can be overriden to suit, for example, to include a location in the RG and MI name, you could do this:
@@ -89,6 +124,7 @@ Adding an environment will:
 - Create two GitHub environments (e.g., "test-iac-plan" and "test-iac-apply") in the target repository
 - Set required GitHub environment secrets (Azure tenant, subscription, client ID)
 - Optionally configure deployment reviewers and branch protection for the environment
+- Update the `.azbootstrap.jsonc` file with details about the new environment
 
 ### Complete Example
 
@@ -189,6 +225,53 @@ The above demonstrates how to:
 - Bootstrap a new project with initial environments.
 - Add additional environments as needed.
 
+## Global Settings File
+
+You can optionally create a global settings file at `~/.azbootstrap-globals.jsonc` to store template repository aliases and other preferences. This allows you to use short aliases instead of full repository URLs.
+
+### Example Configuration
+
+Create a file at `~/.azbootstrap-globals.jsonc` with the following content:
+
+```jsonc
+{
+    // Template repository aliases for commonly used templates
+    "templateAliases": {
+        "terraform": "https://github.com/kewalaka/terraform-azure-starter-template",
+        "bicep": "https://github.com/kewalaka/bicep-azure-starter-template",
+        "my-org-template": "https://github.com/my-org/starter-template"
+    },
+    
+    // Default Azure location to use when not specified
+    "defaultLocation": "newzealandnorth"
+}
+```
+
+### Using Template Aliases
+
+Once configured, you can use the aliases in place of full URLs:
+
+```powershell
+# Using an alias instead of the full URL
+$params = @{
+  TemplateRepoUrl     = "terraform"  # Resolves to the URL defined in the config
+  TargetRepoName      = "my-new-demo"
+  # Location can be omitted if defaultLocation is set in the config file
+}
+Invoke-AzBootstrap @params
+```
+
+### Template URL Resolution
+
+The module resolves template repository URLs in the following order:
+
+1. **Full URLs** - If you provide a full `https://` URL, it's used as-is
+2. **Configured aliases** - If the value matches an alias in your global config, it's resolved to the configured URL
+3. **GitHub shorthand** - If the value matches the pattern `owner/repo`, it's expanded to `https://github.com/owner/repo`
+4. **As-is** - If none of the above match, the value is passed through unchanged
+
+The global settings file is completely optional - the module works without it using full URLs or GitHub shorthand notation.
+
 ## Next Steps
 
 - See [DESIGN.md](./DESIGN.md) for more details on architecture and extensibility.
@@ -197,7 +280,7 @@ The above demonstrates how to:
 
 In no particular order, and without any commitments:
 
-- Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach.
+- Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach. (Done in 0.5 ✅)
+- Global settings file (~/.az-bootstrap.jsonc) with template repository aliases (Done in 0.5 ✅)
 - Examples targeting Bicep (the general approach, as is, will work good with Bicep too!)
 - Support for Azure DevOps
-- Use a ~/.az-bootstrap ini file to track preferences like a default template repo. (maybe even some 'repo aliases')
