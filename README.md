@@ -53,7 +53,7 @@ Invoke-AzBootstrap
 
 This will prompt you for required information with default values provided:
 
-- Template Repository URL (required)
+- Template Repository URL (default: kewalaka/terraform-azure-starter-template)
 - Target Repository Name (required)
 - Azure Location (default: australiaeast)
 - Resource Group Name (default: rg-{repo-name}-{initial-environment-name})
