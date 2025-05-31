@@ -243,7 +243,10 @@ Create a file at `~/.azbootstrap-globals.jsonc` with the following content:
     },
     
     // Default Azure location to use when not specified
-    "defaultLocation": "newzealandnorth"
+    "defaultLocation": "newzealandnorth",
+    
+    // Default template repository to use in interactive mode when no URL is provided
+    "defaultRepository": "terraform"  // Can be an alias, GitHub shorthand, or full URL
 }
 ```
 
@@ -259,6 +262,23 @@ $params = @{
   # Location can be omitted if defaultLocation is set in the config file
 }
 Invoke-AzBootstrap @params
+```
+
+### Default Repository for Interactive Mode
+
+The `defaultRepository` setting provides a default template repository when running in interactive mode. When you run `Invoke-AzBootstrap` without specifying a template repository URL, the interactive prompt will use this value as the default when you press Enter.
+
+**Important**: The `defaultRepository` setting is only used in interactive mode to prevent unintended consequences in automated scenarios.
+
+The `defaultRepository` value can be:
+- A template alias (e.g., `"terraform"`)
+- GitHub shorthand (e.g., `"my-org/my-template"`)
+- A full URL (e.g., `"https://github.com/my-org/my-template"`)
+
+Example interactive session with `defaultRepository` set to `"terraform"`:
+```
+Enter Template Repository URL [terraform]: <press Enter>
+# Uses the terraform alias from your config
 ```
 
 ### Template URL Resolution
