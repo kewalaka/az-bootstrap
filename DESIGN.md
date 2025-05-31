@@ -28,7 +28,9 @@
 - **Remove-AzBootstrapEnvironment:** Removes an environment.
 - **Install-GitHubCLI:** Ensures GitHub CLI is available.
 - **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
-- **New-GitHubEnvironment/Secrets/Policy:** Manages GitHub environments and policies.
+- **New-GitHubEnvironment:** Creates or updates a GitHub environment.
+- **Set-GitHubEnvironmentSecrets:** Sets secrets for a GitHub environment.
+- **Set-GitHubEnvironmentPolicy:** Configures deployment branch policy.
 
 ## Design Principles
 
@@ -103,6 +105,12 @@ Invoke-Pester -Path ./tests/Test-AddEnvironment.Tests.ps1
 # Test removing an environment
 Invoke-Pester -Path ./tests/Test-RemoveEnvironment.Tests.ps1
 ```
+
+## Create GitHub App for Integration tests
+
+This needs to be under an organisation (a free one is fine), because GitHub Apps in a personal context don't support IAT tokens
+
+- <https://github.com/settings/organizations>
 
 ## Release Process
 

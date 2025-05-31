@@ -5,13 +5,16 @@ function Test-AzResourceGroupExists {
         [string]$ResourceGroupName
     )
 
-    $cmd = "az group show --name $ResourceGroupName --query name -o tsv 2>$null"
-    
+    Write-Verbose "Testing if resource group '$ResourceGroupName' exists..."
+
     try {
-        $result = Invoke-Expression $cmd
-        return $LASTEXITCODE -eq 0 -and ($null -ne $result) -and ($result.Trim() -eq $ResourceGroupName)
+        $null = az group show --name $ResourceGroupName 2>$null
+        $exists = $LASTEXITCODE -eq 0
+        Write-Verbose ("Resource group '{0}' {1}" -f $ResourceGroupName, $(if ($exists) { "exists" } else { "does not exist" }))
+        return $exists
     }
     catch {
+        Write-Bootstraplog "Failed to check if resource group '$ResourceGroupName' exists: $_" -Level Warning
         return $false
     }
 }

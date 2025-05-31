@@ -9,7 +9,19 @@ adding support for managed identities (via OIDC), and the creation of GitHub env
 
 You can use it to bootstrap demos, or as a lightweight alternative to subscription vending.  `az-bootstrap` makes it easier to create solution-scoped deployment identities, and just means less clicking.
 
-![alt text](./images/az-bootstrap.gif)
+## Interactive mode
+
+Use `Invoke-AzBootstrap` (or the alias, `iazb`) without inputs for interactive mode:
+
+![illustration of Az-Boostrap running with interactive inputs](./images/az-bootstrap-interactive.gif)
+
+## Non-interactive mode
+
+You can alternatively supply parameters in which case it runs non-interactively
+
+![Illustration of Az-Bootstrap running without prompting for input](./images/az-bootstrap.gif)
+
+Please note: as of v0.5 `-SkipConfirmation $true` needs to be added to the parameters to bypass the prompt.
 
 ## What does it do?
 
@@ -40,6 +52,7 @@ Invoke-AzBootstrap
 ```
 
 This will prompt you for required information with default values provided:
+
 - Template Repository URL (required)
 - Target Repository Name (required)
 - Azure Location (default: australiaeast)
@@ -214,11 +227,11 @@ The above demonstrates how to:
 
 ## Global Settings File
 
-You can optionally create a global settings file at `~/.az-bootstrap.jsonc` to store template repository aliases and other preferences. This allows you to use short aliases instead of full repository URLs.
+You can optionally create a global settings file at `~/.azbootstrap-globals.jsonc` to store template repository aliases and other preferences. This allows you to use short aliases instead of full repository URLs.
 
 ### Example Configuration
 
-Create a file at `~/.az-bootstrap.jsonc` with the following content:
+Create a file at `~/.azbootstrap-globals.jsonc` with the following content:
 
 ```jsonc
 {
@@ -230,7 +243,7 @@ Create a file at `~/.az-bootstrap.jsonc` with the following content:
     },
     
     // Default Azure location to use when not specified
-    "defaultLocation": "eastus"
+    "defaultLocation": "newzealandnorth"
 }
 ```
 
@@ -267,7 +280,7 @@ The global settings file is completely optional - the module works without it us
 
 In no particular order, and without any commitments:
 
-- Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach.
+- Create an interactive wrapper as part of my [starter template](https://github.com/kewalaka/terraform-azure-starter-template) to help people with a guided approach. (Done in 0.5 ✅)
+- Global settings file (~/.az-bootstrap.jsonc) with template repository aliases (Done in 0.5 ✅)
 - Examples targeting Bicep (the general approach, as is, will work good with Bicep too!)
 - Support for Azure DevOps
-- ✅ Global settings file (~/.az-bootstrap.jsonc) with template repository aliases

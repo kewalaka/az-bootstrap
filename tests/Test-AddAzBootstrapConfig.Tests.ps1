@@ -6,6 +6,7 @@ Describe "Add-AzBootstrapConfig" {
 
         # Load the private function directly for testing
         . "$PSScriptRoot/../private/Add-AzBootstrapConfig.ps1"
+        . "$PSScriptRoot/../private/Write-BootstrapLog.ps1"
     }
 
     AfterAll {

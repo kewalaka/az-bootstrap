@@ -1,46 +1,46 @@
 Describe "Test-GitHubRepositoryExists" {
-    BeforeAll {
-        # Load the module and functions
-        $modulePath = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
-        . "$modulePath\private\Test-GitHubRepositoryExists.ps1"
-        . "$modulePath\private\Invoke-GitHubCliCommand.ps1"
+    BeforeAll { 
+        # Dot source the needed private function
+        . "$PSScriptRoot/../private/Write-BootstrapLog.ps1"
+        . "$PSScriptRoot/../private/Invoke-GitHubCliCommand.ps1"
+        . "$PSScriptRoot/../private/Test-GitHubRepositoryExists.ps1"
+        
+        # Mock for dependencies
+        Mock Write-BootstrapLog { }
     }
 
     Context "When testing GitHub repository existence" {
         It "Should return true when repository exists" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { return "test-repo" }
+            Mock Invoke-GitHubCliCommand { "test-repo" }
 
             # Act
             $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
 
             # Assert
             $result | Should -BeTrue
-            Should -InvokeVerifiable
+            Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
         }
 
         It "Should return false when repository does not exist" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { throw "Not Found" }
+            Mock Invoke-GitHubCliCommand { throw "Not Found" }
 
             # Act
             $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "nonexistent-repo"
 
             # Assert
             $result | Should -BeFalse
-            Should -InvokeVerifiable
+            Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
         }
 
         It "Should return false when the repository name doesn't match" {
-            # Arrange
-            Mock Invoke-GitHubCliCommand -Verifiable -MockWith { return "different-repo" }
+            Mock Invoke-GitHubCliCommand { "different-repo" }
 
             # Act
             $result = Test-GitHubRepositoryExists -Owner "testowner" -Repo "test-repo"
 
             # Assert
             $result | Should -BeFalse
-            Should -InvokeVerifiable
+            Should -Invoke Invoke-GitHubCliCommand -Exactly 1 -Scope It
         }
     }
 }

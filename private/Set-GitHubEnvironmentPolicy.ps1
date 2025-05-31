@@ -8,26 +8,23 @@ function Set-GitHubEnvironmentPolicy {
         [string[]]$TeamReviewers = @(),
         [bool]$AddOwnerAsReviewer = $false
     )
-    Write-Host "Setting deployment branch policy on environment '$EnvironmentName'..."
-    $reviewerFlags = @()
+    Write-Bootstraplog "Setting deployment branch policy on environment '$EnvironmentName'..."
+    
     $userList = $UserReviewers
     if ($AddOwnerAsReviewer -and $Owner) {
         if ($userList -notcontains $Owner) {
             $userList += $Owner
         }
     }
+    
     $reviewerFlags = Get-ReviewerFlags -UserReviewers $userList -TeamReviewers $TeamReviewers -Org $Owner
-    $cmd = @(
-        "gh", "api", "-X", "PUT", "/repos/$Owner/$Repo/environments/$EnvironmentName",
-        "-H", "Accept: application/vnd.github+json",
-        "-H", "X-GitHub-Api-Version: 2022-11-28"
-    ) + $reviewerFlags + @(
+    $additionalArgs = $reviewerFlags + @(
         "-F", "deployment_branch_policy[protected_branches]=true",
         "-F", "deployment_branch_policy[custom_branch_policies]=false"
     )
-    Invoke-GitHubCliCommand -Command $cmd | Out-Null
-    Write-Host -NoNewline "`u{2713} " -ForegroundColor Green
-    Write-Host "Reviewers set for '$EnvironmentName'."
+    
+    Invoke-GitHubApiCommand -Method "PUT" -Endpoint "/repos/$Owner/$Repo/environments/$EnvironmentName" -AdditionalArgs $additionalArgs | Out-Null
+    Write-Bootstraplog "Reviewers set for '$EnvironmentName'." -Level Success
 }
 
 
@@ -36,7 +33,7 @@ function Get-UserId {
         [Parameter(Mandatory)]
         [string]$UserName
     )
-    $user = gh api "/users/$UserName" | ConvertFrom-Json
+    $user = Invoke-GitHubApiCommand -Method "GET" -Endpoint "/users/$UserName" | ConvertFrom-Json
     return $user.id
 }
   
@@ -47,7 +44,7 @@ function Get-TeamId {
         [Parameter(Mandatory)]
         [string]$Org
     )
-    $team = gh api "/orgs/$Org/teams/$TeamName" | ConvertFrom-Json
+    $team = Invoke-GitHubApiCommand -Method "GET" -Endpoint "/orgs/$Org/teams/$TeamName" | ConvertFrom-Json
     return $team.id
 }
   
