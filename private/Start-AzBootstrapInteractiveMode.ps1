@@ -34,7 +34,7 @@ function Start-AzBootstrapInteractiveMode {
     # Default storage account name
     $randomPadding = Get-Random -Minimum 100 -Maximum 999
     $defaultStorageAccountName = "st$($defaults.TargetRepoName)$initialEnv$randomPadding" -replace '[^a-z0-9]', ''
-    if ($defaultStorageAccountName.Length -gt 24) { $defaultStorageAccountName = $defaultStorageAccountName.Substring(0,24) }
+    if ($defaultStorageAccountName.Length -gt 24) { $defaultStorageAccountName = $defaultStorageAccountName.Substring(0, 24) }
     $defaults.TerraformStateStorageAccountName = $defaultStorageAccountName
 
     # Azure Location
@@ -63,7 +63,8 @@ function Start-AzBootstrapInteractiveMode {
     $inputPlanMi = Read-Host "Enter Plan Managed Identity Name [$($defaultPlanMi)]"
     if ([string]::IsNullOrWhiteSpace($inputPlanMi)) {
         $planManagedIdentityName = $defaultPlanMi
-    } else {
+    }
+    else {
         $planManagedIdentityName = $inputPlanMi
     }
     $defaults.PlanManagedIdentityName = $planManagedIdentityName
@@ -73,7 +74,8 @@ function Start-AzBootstrapInteractiveMode {
     $inputApplyMi = Read-Host "Enter Apply Managed Identity Name [$($defaultApplyMi)]"
     if ([string]::IsNullOrWhiteSpace($inputApplyMi)) {
         $applyManagedIdentityName = $defaultApplyMi
-    } else {
+    }
+    else {
         $applyManagedIdentityName = $inputApplyMi
     }
     $defaults.ApplyManagedIdentityName = $applyManagedIdentityName
@@ -87,10 +89,11 @@ function Start-AzBootstrapInteractiveMode {
             if ([string]::IsNullOrWhiteSpace($storageAccountName)) {
                 $storageAccountName = $defaults.TerraformStateStorageAccountName
             }
-            $valid = Test-StorageAccountName -StorageAccountName $storageAccountName
+            $valid = Test-AzStorageAccountName -StorageAccountName $storageAccountName
         } while (-not $valid)
         $defaults.TerraformStateStorageAccountName = $storageAccountName
-    } else {
+    }
+    else {
         $defaults.TerraformStateStorageAccountName = $null
     }
 

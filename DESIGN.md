@@ -106,6 +106,12 @@ Invoke-Pester -Path ./tests/Test-AddEnvironment.Tests.ps1
 Invoke-Pester -Path ./tests/Test-RemoveEnvironment.Tests.ps1
 ```
 
+## Create GitHub App for Integration tests
+
+This needs to be under an organisation (a free one is fine), because GitHub Apps in a personal context don't support IAT tokens
+
+- <https://github.com/settings/organizations>
+
 ## Release Process
 
 When creating a new release:

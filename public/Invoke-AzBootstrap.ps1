@@ -110,7 +110,7 @@ function Invoke-AzBootstrap {
 
         # interactive mode checks this during user input
         if (-not [string]::IsNullOrWhiteSpace($TerraformStateStorageAccountName)) {
-            Test-StorageAccountName -StorageAccountName $TerraformStateStorageAccountName
+            Test-AzStorageAccountName -StorageAccountName $TerraformStateStorageAccountName
         }
     }
 

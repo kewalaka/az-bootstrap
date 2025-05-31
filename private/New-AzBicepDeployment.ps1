@@ -97,11 +97,12 @@ function New-AzBicepDeployment {
   try {
     $ts = [System.Xml.XmlConvert]::ToTimeSpan($duration)
     $friendlyDuration = "in {0}m {1}s." -f $ts.Minutes, $ts.Seconds
-  } catch {
+  }
+  catch {
     $friendlyDuration = "."
   }
   
-  Write-BootstrapLog "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState)" $friendlyDuration -Level Success -NoPrefix
+  Write-BootstrapLog "Bicep deployment for '$EnvironmentName' $($deploymentOutput.provisioningState) $friendlyDuration" -Level Success -NoPrefix
   Write-Verbose "[az-bootstrap] Plan MI Client ID: $planManagedIdentityClientId"
   Write-Verbose "[az-bootstrap] Apply MI Client ID: $applyManagedIdentityClientId"
 
