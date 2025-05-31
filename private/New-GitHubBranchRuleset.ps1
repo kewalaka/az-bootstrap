@@ -92,7 +92,7 @@ function New-GitHubBranchRuleset {
         return $true
     }
     catch {
-        Write-Warning "Failed to $actionMessage the ruleset '$RulesetName': $_"
+        Write-Warning "'$RulesetName' was not $actionMessage successfully: $_"
         return $false
     }
     finally {

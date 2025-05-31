@@ -23,8 +23,13 @@ function Set-GitHubEnvironmentPolicy {
         "-F", "deployment_branch_policy[custom_branch_policies]=false"
     )
     
-    Invoke-GitHubApiCommand -Method "PUT" -Endpoint "/repos/$Owner/$Repo/environments/$EnvironmentName" -AdditionalArgs $additionalArgs | Out-Null
-    Write-Bootstraplog "Reviewers set for '$EnvironmentName'." -Level Success
+	try {
+		Invoke-GitHubApiCommand -Method "PUT" -Endpoint "/repos/$Owner/$Repo/environments/$EnvironmentName" -AdditionalArgs $additionalArgs | Out-Null
+		Write-Bootstraplog "Reviewers set for '$EnvironmentName'." -Level Success
+	}
+	catch {
+		Write-Bootstraplog "Reviewers not set for '$EnvironmentName'." -Level Warning
+	}
 }
 
 
