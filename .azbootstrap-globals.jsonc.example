@@ -12,7 +12,8 @@
         "my-bicep": "https://github.com/my-org/my-bicep-template"
     }
     
-    // Future settings can be added here, for example:
+    // Default settings for interactive mode
     "defaultLocation": "eastus",
+    "defaultRepository": "terraform",  // Can be alias, shorthand, or full URL
     // "defaultOwner": "my-org"
 }

@@ -13,9 +13,17 @@ function Start-AzBootstrapInteractiveMode {
     $initialEnv = $defaults.InitialEnvironmentName
 
     # Prompt for template repo URL
-    $templateRepoUrl = Read-Host "Enter Template Repository URL [kewalaka/terraform-azure-starter-template]"
+    # Get default from global config if available, otherwise use hardcoded default
+    $config = Get-AzBootstrapConfig
+    $defaultTemplateRepo = if ($config.ContainsKey('defaultRepository') -and -not [string]::IsNullOrWhiteSpace($config.defaultRepository)) {
+        $config.defaultRepository
+    } else {
+        "kewalaka/terraform-azure-starter-template"
+    }
+    
+    $templateRepoUrl = Read-Host "Enter Template Repository URL [$defaultTemplateRepo]"
     if ([string]::IsNullOrWhiteSpace($templateRepoUrl)) {
-        $templateRepoUrl = "kewalaka/terraform-azure-starter-template"
+        $templateRepoUrl = $defaultTemplateRepo
     }
     $defaults.TemplateRepoUrl = $templateRepoUrl
 
