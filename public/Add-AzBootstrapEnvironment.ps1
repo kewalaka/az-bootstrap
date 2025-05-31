@@ -1,13 +1,11 @@
 function Add-AzBootstrapEnvironment {
-  [CmdletBinding(ConfirmImpact = 'Medium')]
+  [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
   param(
     [Parameter(Mandatory = $true)]
     [string]$EnvironmentName,
-    [Parameter(Mandatory = $true)]
+    
     [string]$ResourceGroupName,
-    [Parameter(Mandatory = $true)]
     [string]$Location,
-    [Parameter(Mandatory = $true)]
     [string]$PlanManagedIdentityName, # Name for the primary/plan MI
 
     [string]$ApplyManagedIdentityName,
@@ -29,11 +27,83 @@ function Add-AzBootstrapEnvironment {
     [string]$ArmTenantId,
     [string]$ArmSubscriptionId,
 
-    [string]$TerraformStateStorageAccountName
+    [string]$TerraformStateStorageAccountName,
+
+    # skips the prompt that asks for confirmation before proceeding
+    [switch]$SkipConfirmation
   )
-  # Validate required parameters
-  # Validate required parameters
-  if (-not $EnvironmentName -or -not $ResourceGroupName -or -not $Location -or -not $PlanManagedIdentityName) {
+  # Read local configuration to get project defaults
+  $localConfig = Get-AzBootstrapLocalConfig
+  $projectDefaults = @{}
+  
+  if ($localConfig -and $localConfig.environments) {
+    # Extract common project patterns from existing environments
+    $existingEnvs = $localConfig.environments.PSObject.Properties
+    if ($existingEnvs.Count -gt 0) {
+      $firstEnv = $existingEnvs[0].Value
+      
+      # Try to derive project base name from resource group pattern
+      if ($firstEnv.ResourceGroupName -match '^rg-(.+?)-[^-]+$') {
+        $projectDefaults.ProjectBaseName = $matches[1]
+      }
+      
+      # Use location from first environment as default
+      if ($firstEnv.DeploymentStackName -match 'rg-(.+?)-(.+?)-\d+$') {
+        # Extract location from deployment stack name pattern if available
+        # This is a fallback; we'll also try to get it from global config
+      }
+    }
+  }
+
+  # Get global config for location default
+  $globalConfig = Get-AzBootstrapConfig
+  if (-not $Location -and $globalConfig.ContainsKey('defaultLocation') -and -not [string]::IsNullOrWhiteSpace($globalConfig.defaultLocation)) {
+    $Location = $globalConfig.defaultLocation
+    Write-Verbose "Using default location '$Location' from global config file."
+  } elseif (-not $Location) {
+    $Location = "australiaeast"
+    Write-Verbose "No location specified, using default '$Location'."
+  }
+
+  # Check if we're in interactive mode (missing required parameters)
+  $isInteractiveMode = [string]::IsNullOrWhiteSpace($ResourceGroupName) -or 
+                       [string]::IsNullOrWhiteSpace($Location) -or 
+                       [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)
+
+  if ($isInteractiveMode) {
+    Write-Verbose "[az-bootstrap] Some required parameters not provided, entering interactive mode."
+    
+    # Prepare defaults for interactive mode
+    $defaults = @{ 
+      EnvironmentName                   = $EnvironmentName
+      ResourceGroupName                 = $ResourceGroupName
+      Location                          = $Location
+      PlanManagedIdentityName           = $PlanManagedIdentityName
+      ApplyManagedIdentityName          = $ApplyManagedIdentityName
+      TerraformStateStorageAccountName  = $TerraformStateStorageAccountName
+      ProjectBaseName                   = $projectDefaults.ProjectBaseName
+    }
+    
+    $interactiveParams = Start-AzBootstrapEnvironmentInteractiveMode -Defaults $defaults
+
+    # Apply interactive params to our current parameters
+    $ResourceGroupName = $interactiveParams.ResourceGroupName
+    $Location = $interactiveParams.Location
+    $PlanManagedIdentityName = $interactiveParams.PlanManagedIdentityName
+    $ApplyManagedIdentityName = $interactiveParams.ApplyManagedIdentityName
+    $TerraformStateStorageAccountName = $interactiveParams.TerraformStateStorageAccountName
+  } else {
+    # Non-interactive mode: set up defaults for missing optional parameters
+    if ([string]::IsNullOrWhiteSpace($ApplyManagedIdentityName)) {
+      $ApplyManagedIdentityName = $PlanManagedIdentityName.Replace("-plan", "-apply")
+    }
+  }
+
+  # Final validation of required parameters
+  if ([string]::IsNullOrWhiteSpace($EnvironmentName) -or 
+      [string]::IsNullOrWhiteSpace($ResourceGroupName) -or 
+      [string]::IsNullOrWhiteSpace($Location) -or 
+      [string]::IsNullOrWhiteSpace($PlanManagedIdentityName)) {
     throw "Parameters 'EnvironmentName', 'ResourceGroupName', 'Location', and 'PlanManagedIdentityName' are required"
   }
 
@@ -65,6 +135,24 @@ function Add-AzBootstrapEnvironment {
   }
   else {
     $PlanManagedIdentityName.Replace("-plan", "-apply")
+  }
+
+  # Confirmation summary before proceeding
+  if (-not $SkipConfirmation) {
+    Write-Host "`n--- Environment Configuration Summary ---" -ForegroundColor Green
+    Write-Host "Environment Name             : $EnvironmentName"
+    Write-Host "Azure Location               : $Location"
+    Write-Host "Resource Group Name          : $ResourceGroupName"
+    Write-Host "Plan Managed Identity Name   : $PlanManagedIdentityName"
+    Write-Host "Apply Managed Identity Name  : $ApplyManagedIdentityName"
+    Write-Host "Terraform State Storage Name : $($TerraformStateStorageAccountName -eq '' ? 'Not specified' : $TerraformStateStorageAccountName)"
+    Write-Host "-------------------------------------------`n" -ForegroundColor Green
+
+    $confirm = Read-Host "Proceed with environment creation? (y/N)"
+    if ($confirm -notin 'y','Y') {
+      Write-Host "Environment creation cancelled." -ForegroundColor Yellow
+      return
+    }
   }
 
   # Check if the resource group already exists

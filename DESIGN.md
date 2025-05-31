@@ -24,7 +24,7 @@
 ## Key Functions
 
 - **Invoke-AzBootstrap:** Orchestrates full bootstrap (repo, infra, branch protection, initial environment).
-- **Add-AzBootstrapEnvironment:** Adds a new environment (Azure infra + GitHub config).
+- **Add-AzBootstrapEnvironment:** Adds a new environment (Azure infra + GitHub config). Supports interactive mode with intelligent defaults derived from existing project configuration, and non-interactive mode with SkipConfirmation.
 - **Remove-AzBootstrapEnvironment:** Removes an environment.
 - **Install-GitHubCLI:** Ensures GitHub CLI is available.
 - **New-AzBicepDeployment:** Deploys Bicep template (infra, MI, RBAC, FIC).
