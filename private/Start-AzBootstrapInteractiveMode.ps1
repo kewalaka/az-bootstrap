@@ -29,11 +29,20 @@ function Start-AzBootstrapInteractiveMode {
             Write-Host "Target Repository Name cannot be empty."
         } 
     } while ([string]::IsNullOrWhiteSpace($targetRepoName))
+    
+    # Parse the target repo name in case it contains owner/repo format
+    # For interactive mode, we'll store the full input but use just the repo part for Azure resource naming
     $defaults.TargetRepoName = $targetRepoName
+    $repoNameForResources = $targetRepoName
+    if ($targetRepoName -match '^[^/]+/[^/]+$') {
+        $parts = $targetRepoName -split '/', 2
+        $repoNameForResources = $parts[1]
+        Write-Host "Detected owner/repo format. Will use '$($parts[0])' as owner and '$($parts[1])' for resource naming."
+    }
 
-    # Default storage account name
+    # Default storage account name - use repo name only (not owner part)
     $randomPadding = Get-Random -Minimum 100 -Maximum 999
-    $defaultStorageAccountName = "st$($defaults.TargetRepoName)$initialEnv$randomPadding" -replace '[^a-z0-9]', ''
+    $defaultStorageAccountName = "st$repoNameForResources$initialEnv$randomPadding" -replace '[^a-z0-9]', ''
     if ($defaultStorageAccountName.Length -gt 24) { $defaultStorageAccountName = $defaultStorageAccountName.Substring(0, 24) }
     $defaults.TerraformStateStorageAccountName = $defaultStorageAccountName
 
@@ -44,22 +53,22 @@ function Start-AzBootstrapInteractiveMode {
     }
     $defaults.Location = $location
 
-    # Resource Group
+    # Resource Group - use repo name only (not owner part)
     $defaultResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($defaults.ResourceGroupName)) {
         $defaults.ResourceGroupName
     }
     else {
-        "rg-$($defaults.TargetRepoName)-$initialEnv"
-    }    
+        "rg-$repoNameForResources-$initialEnv"
+    }
     $resourceGroupName = Read-Host "Enter Resource Group Name [$defaultResourceGroupName]"
     if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
         $resourceGroupName = $defaultResourceGroupName
     }
     $defaults.ResourceGroupName = $resourceGroupName
 
-    # Managed identities.  Use the helper to generate a name unless overriden
+    # Managed identities.  Use the helper to generate a name unless overriden - use repo name only (not owner part)
     # Prompt for Plan Managed Identity Name with default fallback
-    $defaultPlanMi = Get-ManagedIdentityName -BaseName $defaults.TargetRepoName -Environment $initialEnv -Type 'plan' -Override $defaults.PlanManagedIdentityName
+    $defaultPlanMi = Get-ManagedIdentityName -BaseName $repoNameForResources -Environment $initialEnv -Type 'plan' -Override $defaults.PlanManagedIdentityName
     $inputPlanMi = Read-Host "Enter Plan Managed Identity Name [$($defaultPlanMi)]"
     if ([string]::IsNullOrWhiteSpace($inputPlanMi)) {
         $planManagedIdentityName = $defaultPlanMi
@@ -70,7 +79,7 @@ function Start-AzBootstrapInteractiveMode {
     $defaults.PlanManagedIdentityName = $planManagedIdentityName
 
     # Prompt for Apply Managed Identity Name with default fallback
-    $defaultApplyMi = Get-ManagedIdentityName -BaseName $defaults.TargetRepoName -Environment $initialEnv -Type 'apply' -Override $defaults.ApplyManagedIdentityName
+    $defaultApplyMi = Get-ManagedIdentityName -BaseName $repoNameForResources -Environment $initialEnv -Type 'apply' -Override $defaults.ApplyManagedIdentityName
     $inputApplyMi = Read-Host "Enter Apply Managed Identity Name [$($defaultApplyMi)]"
     if ([string]::IsNullOrWhiteSpace($inputApplyMi)) {
         $applyManagedIdentityName = $defaultApplyMi
