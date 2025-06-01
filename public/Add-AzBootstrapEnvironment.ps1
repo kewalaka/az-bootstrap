@@ -73,6 +73,19 @@ function Add-AzBootstrapEnvironment {
     throw "Azure resource group '$ResourceGroupName' already exists. Please choose a different name."
   }
 
+  # do the deployment
+  $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
+    -ResourceGroupName $ResourceGroupName `
+    -Location $Location `
+    -PlanManagedIdentityName $PlanManagedIdentityName `
+    -ApplyManagedIdentityName $ApplyManagedIdentityName `
+    -GitHubOwner $RepoInfo.Owner `
+    -GitHubRepo $RepoInfo.Repo `
+    -PlanEnvName $actualPlanEnvName `
+    -ApplyEnvName $actualApplyEnvName `
+    -ArmSubscriptionId $ArmSubscriptionId `
+    -TerraformStateStorageAccountName $TerraformStateStorageAccountName
+
   # Save configuration to .azbootstrap.jsonc at the top level of the repository
   $environmentConfig = [PSCustomObject]@{
     EnvironmentName              = $EnvironmentName
@@ -89,20 +102,7 @@ function Add-AzBootstrapEnvironment {
     Add-AzBootstrapConfig -ConfigPath $configPath -EnvironmentConfig $environmentConfig
   } else {
     Write-Warning "Could not determine repository root path. Skipping writing configuration file."
-  }  
-
-  # do the deployment
-  $infraDetails = New-AzBicepDeployment -EnvironmentName $EnvironmentName `
-    -ResourceGroupName $ResourceGroupName `
-    -Location $Location `
-    -PlanManagedIdentityName $PlanManagedIdentityName `
-    -ApplyManagedIdentityName $ApplyManagedIdentityName `
-    -GitHubOwner $RepoInfo.Owner `
-    -GitHubRepo $RepoInfo.Repo `
-    -PlanEnvName $actualPlanEnvName `
-    -ApplyEnvName $actualApplyEnvName `
-    -ArmSubscriptionId $ArmSubscriptionId `
-    -TerraformStateStorageAccountName $TerraformStateStorageAccountName
+  }
 
   if (-not $infraDetails) {
     throw "Failed to set up Azure infrastructure for environment '$EnvironmentName'."
@@ -120,12 +120,14 @@ function Add-AzBootstrapEnvironment {
     }
   }  Write-Bootstraplog "Configuring GitHub environment '$actualPlanEnvName'..."
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName
+  $secrets["ARM_CLIENT_ID"] = $infraDetails.PlanManagedIdentityClientId
   foreach ($key in $secrets.Keys) {
     Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualPlanEnvName -Secrets @{$key=$secrets[$key]} 
   }
 
   Write-Bootstraplog "Configuring GitHub environment '$actualApplyEnvName'..."
   New-GitHubEnvironment -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName
+  $secrets["ARM_CLIENT_ID"] = $infraDetails.ApplyManagedIdentityClientId
   foreach ($key in $secrets.Keys) {
     Set-GitHubEnvironmentSecrets -Owner $RepoInfo.Owner -Repo $RepoInfo.Repo -EnvironmentName $actualApplyEnvName -Secrets @{$key=$secrets[$key]} 
   }

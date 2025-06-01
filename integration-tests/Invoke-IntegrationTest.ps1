@@ -105,7 +105,7 @@ function Invoke-TestSetup {
         $repoInfo = $null
         
         try {
-            $ghOutput = gh repo view $repoName --json name, url, owner 2>$null
+            $ghOutput = gh repo view $repoName --json name,url,owner 2>$null
             if ($ghOutput) {
                 $repoInfo = $ghOutput | ConvertFrom-Json
                 $repoExists = ($repoInfo.name -eq $repoName)
@@ -200,7 +200,7 @@ function Invoke-TestSetup {
             Write-Host "`n✅ Integration test PASSED" -ForegroundColor Green
         }
         else {            
-            Write-Error "❌ Integration test FAILED."
+            Write-Error "❌ Integration test FAILED. (Repository exists: $repoExists, Resource group exists: $rgExists)"
             exit 1
         }
     }
