@@ -63,6 +63,13 @@ function Invoke-AzBootstrap {
     }
 
     #region:check parameters
+    # Parse target repository info early (handles owner/repo format)
+    # We do this before interactive mode so we can pass the correct repo name for defaults
+    $initialTargetRepoInfo = $null
+    if (-not [string]::IsNullOrWhiteSpace($TargetRepoName)) {
+        $initialTargetRepoInfo = Resolve-TargetRepositoryInfo -TargetRepoName $TargetRepoName -GitHubOwner $GitHubOwner
+    }
+    
     # Check if we're in interactive mode (not all required parameters have been provided)
     $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
                           [string]::IsNullOrWhiteSpace($TargetRepoName) -or 
@@ -70,11 +77,12 @@ function Invoke-AzBootstrap {
 
     if ($isInteractiveMode) {
         Write-Verbose "[az-bootstrap] No required parameters provided, entering interactive mode."
-        # Prepare defaults for interactive mode
+        # Prepare defaults for interactive mode - use just the repo name for Azure resource defaults
+        $targetRepoNameForDefaults = if ($initialTargetRepoInfo) { $initialTargetRepoInfo.Repo } else { $TargetRepoName }
         $defaults = @{ 
             InitialEnvironmentName            = $InitialEnvironmentName
             TemplateRepoUrl                   = $TemplateRepoUrl
-            TargetRepoName                    = $TargetRepoName
+            TargetRepoName                    = $targetRepoNameForDefaults
             Location                          = $Location
             ResourceGroupName                 = $ResourceGroupName
             PlanManagedIdentityName           = $PlanManagedIdentityName
@@ -91,19 +99,26 @@ function Invoke-AzBootstrap {
         $PlanManagedIdentityName = $interactiveParams.PlanManagedIdentityName
         $ApplyManagedIdentityName = $interactiveParams.ApplyManagedIdentityName
         $TerraformStateStorageAccountName = $interactiveParams.TerraformStateStorageAccountName
+        
+        # Re-parse target repository info after interactive mode
+        $targetRepoInfo = Resolve-TargetRepositoryInfo -TargetRepoName $TargetRepoName -GitHubOwner $GitHubOwner
     }
     else
     {
+        # Use the previously parsed target repo info
+        $targetRepoInfo = $initialTargetRepoInfo
+        
         # set up the defaults
+        $actualRepoName = $targetRepoInfo.Repo
         $ResourceGroupName = if (-not [string]::IsNullOrWhiteSpace($ResourceGroupName)) {
             $ResourceGroupName
         }
         else {
-            "rg-$TargetRepoName-$InitialEnvironmentName"
+            "rg-$actualRepoName-$InitialEnvironmentName"
         }
 
-        $PlanManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'plan' -Override $PlanManagedIdentityName
-        $ApplyManagedIdentityName = Get-ManagedIdentityName -BaseName $TargetRepoName -Environment $InitialEnvironmentName -Type 'apply' -Override $ApplyManagedIdentityName
+        $PlanManagedIdentityName = Get-ManagedIdentityName -BaseName $actualRepoName -Environment $InitialEnvironmentName -Type 'plan' -Override $PlanManagedIdentityName
+        $ApplyManagedIdentityName = Get-ManagedIdentityName -BaseName $actualRepoName -Environment $InitialEnvironmentName -Type 'apply' -Override $ApplyManagedIdentityName
 
         $initialPlanEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'plan'
         $initialApplyEnvName = Get-EnvironmentName -EnvironmentName $InitialEnvironmentName -Type 'apply'
@@ -113,10 +128,14 @@ function Invoke-AzBootstrap {
             Test-AzStorageAccountName -StorageAccountName $TerraformStateStorageAccountName
         }
     }
+    
+    # Extract final values from target repo info
+    $actualOwner = $targetRepoInfo.Owner
+    $actualRepoName = $targetRepoInfo.Repo
 
     # az boostrap expects an empty target directory
     if (-not $TargetDirectory -or [string]::IsNullOrWhiteSpace($TargetDirectory)) {
-        $TargetDirectory = Join-Path -Path (Get-Location) -ChildPath $TargetRepoName
+        $TargetDirectory = Join-Path -Path (Get-Location) -ChildPath $actualRepoName
     }
 
     if (Test-Path $TargetDirectory) {
@@ -142,18 +161,11 @@ function Invoke-AzBootstrap {
 
     # GitHub repo
     $TemplateRepoUrl = Resolve-TemplateRepoUrl -TemplateRepoUrl $TemplateRepoUrl
-    $ownerArg = if ($GitHubOwner) { "--owner $GitHubOwner" } else { "" }
+    $ownerArg = "--owner $actualOwner"
     $visibilityArg = switch ($GitHubVisibility) {
         "private" { "--private" }
         "internal" { "--internal" }
         Default { "--public" }
-    }
-    
-    # Determine the actual owner if not provided
-    $actualOwner = if ($GitHubOwner) { $GitHubOwner } else {
-        # Try to get the current user/org from gh CLI
-        $user = gh auth status --show-token 2>$null | Select-String 'Logged in to github.com account (.*) \(' | ForEach-Object { $_.Matches.Groups[1].Value }
-        if ($user) { $user } else { throw "Could not determine GitHub owner. Please specify -Owner." }
     }
 
     # Check if the resource group already exists
@@ -163,15 +175,15 @@ function Invoke-AzBootstrap {
     }
     
     # Check if the GitHub repository already exists
-    Write-BootstrapLog "Checking if GitHub repo '$actualOwner/$TargetRepoName' already exists..."
-    if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $TargetRepoName) {
-        throw "GitHub repository '$actualOwner/$TargetRepoName' already exists. Please choose a different name."
+    Write-BootstrapLog "Checking if GitHub repo '$actualOwner/$actualRepoName' already exists..."
+    if (Test-GitHubRepositoryExists -Owner $actualOwner -Repo $actualRepoName) {
+        throw "GitHub repository '$actualOwner/$actualRepoName' already exists. Please choose a different name."
     }
 
     if (-not $SkipConfirmation) {
         Write-Host "`n--- Configuration Summary ---" -ForegroundColor Green
         Write-Host "Template Repository URL      : $TemplateRepoUrl"
-        Write-Host "Target Repository            : $actualOwner/$TargetRepoName"
+        Write-Host "Target Repository            : $actualOwner/$actualRepoName"
         Write-Host "Azure Location               : $Location"
         Write-Host "Resource Group Name          : $ResourceGroupName"
         Write-Host "Plan Managed Identity Name   : $PlanManagedIdentityName"
@@ -189,15 +201,15 @@ function Invoke-AzBootstrap {
     #
     # end checks - now we start making things
     #
-    Write-BootstrapLog "Creating new GitHub repo '$TargetRepoName' from template: $TemplateRepoUrl"
-    $cmd = "gh repo create $TargetRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
+    Write-BootstrapLog "Creating new GitHub repo '$actualRepoName' from template: $TemplateRepoUrl"
+    $cmd = "gh repo create $actualRepoName --template $TemplateRepoUrl $visibilityArg $ownerArg"
     Invoke-Expression $cmd
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create new GitHub repository from template."
     }
 
-    $repoUrl = "https://github.com/$actualOwner/$TargetRepoName.git"
-    Write-BootstrapLog "Cloning new repo '$actualOwner/$TargetRepoName' to $TargetDirectory"
+    $repoUrl = "https://github.com/$actualOwner/$actualRepoName.git"
+    Write-BootstrapLog "Cloning new repo '$actualOwner/$actualRepoName' to $TargetDirectory"
     git clone $repoUrl $TargetDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to clone new repository from $repoUrl."
@@ -205,7 +217,7 @@ function Invoke-AzBootstrap {
 
     Push-Location $TargetDirectory
     try {
-        $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $actualOwner -OverrideRepo $TargetRepoName
+        $RepoInfo = Get-GitHubRepositoryInfo -OverrideOwner $actualOwner -OverrideRepo $actualRepoName
         if (-not $RepoInfo) {
             throw "Could not determine GitHub repository information. Ensure you are in a git repository or provide the -Owner parameter."
         }

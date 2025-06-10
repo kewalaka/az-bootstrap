@@ -55,4 +55,46 @@ Describe "Start-AzBootstrapInteractiveMode" {
         $result.PlanManagedIdentityName | Should -Be "mitest-repodev-plan"
         $result.ApplyManagedIdentityName | Should -Be "mitest-repodev-apply"
     }
+    
+    It "Should handle owner/repo format in target repository name" {
+        # Mock Read-Host to simulate user input with owner/repo format
+        Mock Read-Host {
+            param($prompt)
+            
+            switch -Wildcard ($prompt) {
+                "*Template Repository URL*" { return "https://github.com/test/template-repo" }
+                "*Target Repository Name*" { return "myorg/my-repo" }
+                "*Azure Location*" { return "westus" }
+                "*Resource Group Name*" { return "" } # Accept default
+                "*Plan Managed Identity Name*" { return "" } # Accept default
+                "*Apply Managed Identity Name*" { return "" } # Accept default
+                "*Storage Account Name*" { return "testazb123" }
+                "*Proceed*" { return "y" }
+                default { return "" }
+            }
+        }
+        
+        # Also mock Write-Host to capture the owner/repo detection message
+        Mock Write-Host {}
+        
+        $result = Start-AzBootstrapInteractiveMode -Defaults @{
+            InitialEnvironmentName = 'dev';
+            TemplateRepoUrl = '';
+            TargetRepoName = '';
+            Location = 'eastus';
+            ResourceGroupName = '';
+            PlanManagedIdentityName = '';
+            ApplyManagedIdentityName = '';
+            TerraformStateStorageAccountName = '';
+        }
+
+        # The target repo name should include the full owner/repo
+        $result.TargetRepoName | Should -Be "myorg/my-repo"
+        
+        # But Azure resource names should use only the repo name part
+        $result.ResourceGroupName | Should -Be "rg-my-repo-dev"
+        
+        # Verify Write-Host was called with owner/repo detection message
+        Should -Invoke Write-Host -ParameterFilter { $Object -like "*Detected owner/repo format*" }
+    }
 }
