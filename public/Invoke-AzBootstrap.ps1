@@ -172,6 +172,8 @@ function Invoke-AzBootstrap {
         Write-Host "`n--- Configuration Summary ---" -ForegroundColor Green
         Write-Host "Template Repository URL      : $TemplateRepoUrl"
         Write-Host "Target Repository            : $actualOwner/$TargetRepoName"
+        Write-Host "Azure Subscription           : $($azContext.SubscriptionName) ($($azContext.SubscriptionId))"
+        Write-Host "Azure Tenant ID              : $($azContext.TenantId)"
         Write-Host "Azure Location               : $Location"
         Write-Host "Resource Group Name          : $ResourceGroupName"
         Write-Host "Plan Managed Identity Name   : $PlanManagedIdentityName"
