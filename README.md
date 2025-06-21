@@ -153,10 +153,13 @@ $params = @{
   TargetDirectory = "D:\src\kewalaka\demos\$name" 
   
   # Terraform State Storage account
-  TerraformStateStorageAccount = "strasndn23914"
+  TerraformStateStorageAccountName = "strasndn23914"
+  
+  # Storage account network access (default: "private")
+  StorageAccountFirewall = "private"  # or "public"
   
   # "private" or "public" (default: "public")
-  Visibility = "private"             
+  Visibility = "private"
   
   # GitHub org/user for the new repo (default: detected from gh auth)
   Owner = "my-org-or-user"      
@@ -243,7 +246,10 @@ Create a file at `~/.azbootstrap-globals.jsonc` with the following content:
     },
     
     // Default Azure location to use when not specified
-    "defaultLocation": "newzealandnorth"
+    "defaultLocation": "newzealandnorth",
+    
+    // Default storage account firewall setting: "private" or "public"
+    "storageAccountFirewall": "private"
 }
 ```
 
