@@ -27,6 +27,7 @@ Describe "Start-AzBootstrapInteractiveMode" {
                 "*Plan Managed Identity Name*" { return "" } # Accept default
                 "*Apply Managed Identity Name*" { return "" } # Accept default
                 "*Storage Account Name*" { return "testazb123" }
+                "*Storage Account Firewall Setting*" { return "public" }
                 "*Proceed*" { return "y" }
                 default { return "" }
             }
@@ -41,6 +42,7 @@ Describe "Start-AzBootstrapInteractiveMode" {
             PlanManagedIdentityName = 'mitest-repodev-plan';
             ApplyManagedIdentityName = 'mitest-repodev-apply';
             TerraformStateStorageAccountName = 'stdev123';
+            StorageAccountFirewall = 'private';
         }
 
         # Validate result structure
@@ -49,10 +51,12 @@ Describe "Start-AzBootstrapInteractiveMode" {
         $result.Keys | Should -Contain "TemplateRepoUrl"
         $result.Keys | Should -Contain "TargetRepoName"
         $result.Keys | Should -Contain "Location"
+        $result.Keys | Should -Contain "StorageAccountFirewall"
         
         # Validate CAF-aligned naming convention defaults
         $result.ResourceGroupName | Should -Be "rgdev" 
         $result.PlanManagedIdentityName | Should -Be "mitest-repodev-plan"
         $result.ApplyManagedIdentityName | Should -Be "mitest-repodev-apply"
+        $result.StorageAccountFirewall | Should -Be "public"
     }
 }

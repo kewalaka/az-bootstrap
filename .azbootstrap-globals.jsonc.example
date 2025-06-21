@@ -14,5 +14,6 @@
     
     // Future settings can be added here, for example:
     "defaultLocation": "eastus",
+    "storageAccountFirewall": "private"
     // "defaultOwner": "my-org"
 }
