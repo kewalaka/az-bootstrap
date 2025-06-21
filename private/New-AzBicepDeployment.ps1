@@ -21,7 +21,9 @@ function New-AzBicepDeployment {
     [string]$ApplyEnvName,
     [Parameter(Mandatory)] # Subscription ID is required for subscription-level deployments
     [string]$ArmSubscriptionId,
-    [string]$TerraformStateStorageAccountName
+    [string]$TerraformStateStorageAccountName,
+    [ValidateSet('public', 'private')]
+    [string]$StorageAccountFirewall = 'private'
   )
 
   $bicepTemplateFile = Join-Path $PSScriptRoot '..' 'templates' 'environment-infra.bicep'
@@ -41,6 +43,7 @@ function New-AzBicepDeployment {
     gitHubPlanEnvironmentName        = $PlanEnvName.ToLower()
     gitHubApplyEnvironmentName       = $ApplyEnvName.ToLower()
     terraformStateStorageAccountName = $TerraformStateStorageAccountName
+    storageAccountFirewall           = $StorageAccountFirewall
   }
   # Remove any parameters with $null values, as Bicep might error on `paramName=$null`
   $activeBicepParams = $bicepParams.GetEnumerator() | Where-Object { $_.Value -ne $null } | ForEach-Object { "$( $_.Name )=$( $_.Value )" }

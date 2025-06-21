@@ -27,6 +27,10 @@ param terraformStateStorageAccountName string = ''
 @description('Retention days for blob delete retention policy.')
 param retentionDays int = 7
 
+@description('Storage account firewall setting. Options: "public" (allow public access) or "private" (restrict to private endpoints). Default: "private".')
+@allowed(['public', 'private'])
+param storageAccountFirewall string = 'private'
+
 // @description('Set to true to create a separate Managed Identity specifically for the "apply" environment. If false, the primary MI will be used for both plan and apply.')
 // param createSeparateApplyMI bool = true
 
@@ -151,6 +155,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = if (!
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
     allowSharedKeyAccess: false
+    publicNetworkAccess: storageAccountFirewall == 'public' ? 'Enabled' : 'Disabled'
     blobServices: {
       versioning: {
         enabled: true

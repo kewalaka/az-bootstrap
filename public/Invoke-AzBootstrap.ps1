@@ -41,6 +41,10 @@ function Invoke-AzBootstrap {
 
         # optional storage account for terraform state
         [string]$TerraformStateStorageAccountName = "",
+        
+        # storage account firewall setting
+        [ValidateSet('public', 'private')]
+        [string]$StorageAccountFirewall,
 
         # skips the prompt that asks for confirmation before proceeding
         [switch]$SkipConfirmation
@@ -62,6 +66,19 @@ function Invoke-AzBootstrap {
         }
     }
 
+    # If StorageAccountFirewall is not provided, try to get it from the config
+    if (-not $StorageAccountFirewall -or [string]::IsNullOrWhiteSpace($StorageAccountFirewall)) {
+        $config = Get-AzBootstrapConfig
+        if ($config.ContainsKey('storageAccountFirewall') -and -not [string]::IsNullOrWhiteSpace($config.storageAccountFirewall)) {
+            $StorageAccountFirewall = $config.storageAccountFirewall
+            Write-Verbose "Using default storage account firewall setting '$StorageAccountFirewall' from config file."
+        }
+        else {
+            $StorageAccountFirewall = "private"
+            Write-Verbose "No storage account firewall setting specified, using default '$StorageAccountFirewall'."
+        }
+    }
+
     #region:check parameters
     # Check if we're in interactive mode (not all required parameters have been provided)
     $isInteractiveMode = [string]::IsNullOrWhiteSpace($TemplateRepoUrl) -or 
@@ -80,6 +97,7 @@ function Invoke-AzBootstrap {
             PlanManagedIdentityName           = $PlanManagedIdentityName
             ApplyManagedIdentityName          = $ApplyManagedIdentityName
             TerraformStateStorageAccountName  = $TerraformStateStorageAccountName
+            StorageAccountFirewall            = $StorageAccountFirewall
         }
         $interactiveParams = Start-AzBootstrapInteractiveMode -Defaults $defaults
 
@@ -91,6 +109,7 @@ function Invoke-AzBootstrap {
         $PlanManagedIdentityName = $interactiveParams.PlanManagedIdentityName
         $ApplyManagedIdentityName = $interactiveParams.ApplyManagedIdentityName
         $TerraformStateStorageAccountName = $interactiveParams.TerraformStateStorageAccountName
+        $StorageAccountFirewall = $interactiveParams.StorageAccountFirewall
     }
     else
     {
@@ -240,6 +259,7 @@ function Invoke-AzBootstrap {
             ApplyEnvironmentTeamReviewers    = $ApplyEnvironmentTeamReviewers
             AddOwnerAsReviewer               = $AddOwnerAsReviewer
             TerraformStateStorageAccountName = $TerraformStateStorageAccountName
+            StorageAccountFirewall           = $StorageAccountFirewall
         }
 
         $DeploymentEnv = Add-AzBootstrapEnvironment @addEnvParams

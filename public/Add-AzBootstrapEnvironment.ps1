@@ -29,7 +29,10 @@ function Add-AzBootstrapEnvironment {
     [string]$ArmTenantId,
     [string]$ArmSubscriptionId,
 
-    [string]$TerraformStateStorageAccountName
+    [string]$TerraformStateStorageAccountName,
+    
+    [ValidateSet('public', 'private')]
+    [string]$StorageAccountFirewall
   )
   # Validate required parameters
   # Validate required parameters
@@ -49,6 +52,19 @@ function Add-AzBootstrapEnvironment {
     $storageAccountValidation = Test-AzStorageAccountName -StorageAccountName $TerraformStateStorageAccountName
     if (-not $storageAccountValidation) {
       throw "A valid storage account is required."
+    }
+  }
+
+  # If StorageAccountFirewall is not provided, try to get it from the config
+  if (-not $StorageAccountFirewall -or [string]::IsNullOrWhiteSpace($StorageAccountFirewall)) {
+    $config = Get-AzBootstrapConfig
+    if ($config.ContainsKey('storageAccountFirewall') -and -not [string]::IsNullOrWhiteSpace($config.storageAccountFirewall)) {
+      $StorageAccountFirewall = $config.storageAccountFirewall
+      Write-Verbose "Using default storage account firewall setting '$StorageAccountFirewall' from config file."
+    }
+    else {
+      $StorageAccountFirewall = "private"
+      Write-Verbose "No storage account firewall setting specified, using default '$StorageAccountFirewall'."
     }
   }
 
@@ -84,7 +100,8 @@ function Add-AzBootstrapEnvironment {
     -PlanEnvName $actualPlanEnvName `
     -ApplyEnvName $actualApplyEnvName `
     -ArmSubscriptionId $ArmSubscriptionId `
-    -TerraformStateStorageAccountName $TerraformStateStorageAccountName
+    -TerraformStateStorageAccountName $TerraformStateStorageAccountName `
+    -StorageAccountFirewall $StorageAccountFirewall
 
   # Save configuration to .azbootstrap.jsonc at the top level of the repository
   $environmentConfig = [PSCustomObject]@{

@@ -98,6 +98,17 @@ function Start-AzBootstrapInteractiveMode {
         $defaults.TerraformStateStorageAccountName = $null
     }
 
+    # Prompt for storage account firewall setting
+    $storageFirewall = Read-Host "Enter Storage Account Firewall Setting [private/public, default: private]"
+    if ([string]::IsNullOrWhiteSpace($storageFirewall)) {
+        $storageFirewall = "private"
+    }
+    elseif ($storageFirewall -notin @('public', 'private')) {
+        Write-Host "Invalid option. Using default 'private'."
+        $storageFirewall = "private"
+    }
+    $defaults.StorageAccountFirewall = $storageFirewall
+
     Write-Host "`n" -NoNewline
 
     return $defaults
